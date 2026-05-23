@@ -1,0 +1,189 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" font-family="'SF Mono','Cascadia Code','JetBrains Mono',Consolas,monospace" font-size="13">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#58a6ff"/>
+    </marker>
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b949e"/>
+    </marker>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="box-user" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c2336"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity=".5"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="1200" fill="url(#bg-grad)" rx="8"/>
+
+  <!-- Title -->
+  <text x="450" y="38" text-anchor="middle" fill="#58a6ff" font-size="20" font-weight="700">Runtime do Opencode</text>
+  <text x="450" y="56" text-anchor="middle" fill="#8b949e" font-size="11">Ciclo de vida de uma requisição: prompt  →  agente  →  tools  →  resposta</text>
+  <line x1="80" y1="66" x2="820" y2="66" stroke="#30363d" stroke-width="1"/>
+
+  <!-- ============================================================ -->
+  <!-- LAYER LEGEND (right side) -->
+  <!-- ============================================================ -->
+
+  <!-- Config Layer -->
+  <rect x="640" y="80" width="240" height="44" rx="6" fill="#0d3d1a" stroke="#3fb950" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+  <text x="760" y="98" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="600">CAMADA DE CONFIG</text>
+  <text x="760" y="114" text-anchor="middle" fill="#8b949e" font-size="10">opencode.json  ·  frontmatter .md</text>
+
+  <!-- Schema Layer -->
+  <rect x="640" y="135" width="240" height="44" rx="6" fill="#3d1f00" stroke="#d4760a" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+  <text x="760" y="153" text-anchor="middle" fill="#d4760a" font-size="11" font-weight="600">CAMADA DE SCHEMA</text>
+  <text x="760" y="169" text-anchor="middle" fill="#8b949e" font-size="10">validação  ·  contrato JSON Schema</text>
+
+  <!-- Runtime Layer -->
+  <rect x="640" y="190" width="240" height="44" rx="6" fill="#1a233d" stroke="#bc8cff" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>
+  <text x="760" y="208" text-anchor="middle" fill="#bc8cff" font-size="11" font-weight="600">CAMADA DE RUNTIME</text>
+  <text x="760" y="224" text-anchor="middle" fill="#8b949e" font-size="10">execução  ·  motor  ·  hooks</text>
+
+  <!-- ============================================================ -->
+  <!-- 1. USER / PROMPT -->
+  <!-- ============================================================ -->
+  <rect x="280" y="82" width="340" height="56" rx="8" fill="url(#box-user)" stroke="#58a6ff" stroke-width="2" filter="url(#shadow)"/>
+  <text x="450" y="104" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="700">⒈  USUÁRIO · PROMPT</text>
+  <text x="450" y="122" text-anchor="middle" fill="#e6edf3" font-size="11">O usuário envia uma mensagem de texto</text>
+  <text x="450" y="134" text-anchor="middle" fill="#8b949e" font-size="10">pode incluir @-mention para agente específico</text>
+
+  <!-- Arrow 1→2 -->
+  <line x1="450" y1="138" x2="450" y2="175" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============================================================ -->
+  <!-- 2. ROUTING -->
+  <!-- ============================================================ -->
+  <rect x="230" y="178" width="440" height="64" rx="8" fill="#161b22" stroke="#d29922" stroke-width="2" filter="url(#shadow)"/>
+  <text x="450" y="200" text-anchor="middle" fill="#d29922" font-size="14" font-weight="700">⒉  ROTEAMENTO</text>
+  <text x="450" y="219" text-anchor="middle" fill="#e6edf3" font-size="11">Router lê default_agent ou @-mention</text>
+  <text x="450" y="235" text-anchor="middle" fill="#8b949e" font-size="10">seleciona o AgentConfig e o system prompt correspondente</text>
+
+  <!-- Arrow 2→3 -->
+  <line x1="450" y1="242" x2="450" y2="285" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ============================================================ -->
+  <!-- 3. AGENT LOOP (container) -->
+  <!-- ============================================================ -->
+  <rect x="130" y="288" width="640" height="340" rx="12" fill="#161b22" stroke="#bc8cff" stroke-width="2" stroke-dasharray="6,4" filter="url(#shadow)"/>
+  <text x="450" y="312" text-anchor="middle" fill="#bc8cff" font-size="14" font-weight="700">⒊  AGENT LOOP  (LLM + Tool Calling)</text>
+  <text x="450" y="328" text-anchor="middle" fill="#8b949e" font-size="10">iteração até resposta final ou limite de steps</text>
+
+  <!-- 3a. LLM Think -->
+  <rect x="170" y="342" width="260" height="54" rx="6" fill="#1c2336" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="300" y="364" text-anchor="middle" fill="#58a6ff" font-size="12" font-weight="600">LLM · Think</text>
+  <text x="300" y="383" text-anchor="middle" fill="#e6edf3" font-size="10">Modelo processa contexto + prompt</text>
+
+  <!-- Arrow 3a→3b -->
+  <line x1="430" y1="369" x2="480" y2="369" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow-dim)"/>
+
+  <!-- 3b. Tool Decision -->
+  <rect x="484" y="342" width="260" height="54" rx="6" fill="#1c2336" stroke="#d29922" stroke-width="1.5"/>
+  <text x="614" y="364" text-anchor="middle" fill="#d29922" font-size="12" font-weight="600">Decide · Tool Call?</text>
+  <text x="614" y="383" text-anchor="middle" fill="#e6edf3" font-size="10">Modelo escolhe tool e argumentos</text>
+
+  <!-- Arrow 3b→3c (down) -->
+  <line x1="614" y1="396" x2="614" y2="428" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3c. Plugin Hooks -->
+  <rect x="484" y="430" width="260" height="66" rx="6" fill="#152d1a" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="614" y="452" text-anchor="middle" fill="#3fb950" font-size="12" font-weight="600">Plugin Hooks Layer</text>
+  <text x="614" y="470" text-anchor="middle" fill="#e6edf3" font-size="10">tool.execute.before</text>
+  <text x="614" y="486" text-anchor="middle" fill="#e6edf3" font-size="10">tool.execute.after</text>
+
+  <!-- Arrow 3c→3d -->
+  <line x1="614" y1="496" x2="614" y2="515" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3d. Tool Execution -->
+  <rect x="484" y="518" width="260" height="54" rx="6" fill="#2d1515" stroke="#f85149" stroke-width="1.5"/>
+  <text x="614" y="540" text-anchor="middle" fill="#f85149" font-size="12" font-weight="600">Tool Execution</text>
+  <text x="614" y="558" text-anchor="middle" fill="#e6edf3" font-size="10">read · edit · bash · glob · grep · etc.</text>
+
+  <!-- Permission check label inside tool box -->
+  <text x="614" y="566" text-anchor="middle" fill="#8b949e" font-size="8">Permission: allow / ask / deny</text>
+
+  <!-- Arrow 3d→3e (back to agent loop) -->
+  <line x1="614" y1="572" x2="614" y2="596" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 3e. Result back to LLM -->
+  <rect x="484" y="598" width="260" height="18" rx="4" fill="#1c2336" stroke="#8b949e" stroke-width="1"/>
+  <text x="614" y="611" text-anchor="middle" fill="#8b949e" font-size="10">Result → LLM (próxima iteração do loop)</text>
+
+  <!-- Loop arrow back from result to LLM -->
+  <path d="M 170 600 L 140 600 L 140 369 L 160 369" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-dim)"/>
+  <text x="130" y="490" text-anchor="middle" fill="#8b949e" font-size="9" transform="rotate(-90,130,490)">loop até resposta final ou steps esgotados</text>
+
+  <!-- ============================================================ -->
+  <!-- 3f. Permission check (left side inside agent loop) -->
+  <!-- ============================================================ -->
+  <rect x="170" y="430" width="260" height="45" rx="6" fill="#2d1515" stroke="#d29922" stroke-width="1" opacity="0.8"/>
+  <text x="300" y="452" text-anchor="middle" fill="#d29922" font-size="11" font-weight="600">Permission Check</text>
+  <text x="300" y="468" text-anchor="middle" fill="#e6edf3" font-size="10">RuleConfig · ActionConfig · pattern match</text>
+
+  <!-- Arrow from permission to hooks -->
+  <line x1="430" y1="452" x2="474" y2="452" stroke="#8b949e" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-dim)"/>
+
+  <!-- ============================================================ -->
+  <!-- 4. OUTPUT / RESULT -->
+  <!-- ============================================================ -->
+  <line x1="450" y1="628" x2="450" y2="675" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="230" y="678" width="440" height="72" rx="8" fill="url(#box-user)" stroke="#3fb950" stroke-width="2" filter="url(#shadow)"/>
+  <text x="450" y="700" text-anchor="middle" fill="#3fb950" font-size="14" font-weight="700">⒋  OUTPUT · RESPOSTA</text>
+  <text x="450" y="720" text-anchor="middle" fill="#e6edf3" font-size="11">Resposta do modelo + resultados das tools</text>
+  <text x="450" y="738" text-anchor="middle" fill="#8b949e" font-size="10">exibida no chat para o usuário</text>
+
+  <!-- ============================================================ -->
+  <!-- LEGEND / SUPPORTING DETAILS -->
+  <!-- ============================================================ -->
+  <line x1="80" y1="786" x2="820" y2="786" stroke="#30363d" stroke-width="1"/>
+
+  <text x="450" y="808" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600">LEGENDA</text>
+
+  <!-- Legend boxes -->
+  <rect x="100" y="822" width="16" height="16" rx="3" fill="#1c2336" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="122" y="834" fill="#8b949e" font-size="11">Estado do sistema</text>
+
+  <rect x="280" y="822" width="16" height="16" rx="3" fill="#152d1a" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="302" y="834" fill="#8b949e" font-size="11">Plugin/Extensão</text>
+
+  <rect x="440" y="822" width="16" height="16" rx="3" fill="#2d1515" stroke="#f85149" stroke-width="1.5"/>
+  <text x="462" y="834" fill="#8b949e" font-size="11">Tool nativa</text>
+
+  <rect x="600" y="822" width="16" height="16" rx="3" fill="#161b22" stroke="#d29922" stroke-width="2"/>
+  <text x="622" y="834" fill="#8b949e" font-size="11">Roteamento</text>
+
+  <!-- Dashed line legend -->
+  <line x1="100" y1="865" x2="140" y2="865" stroke="#bc8cff" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="148" y="869" fill="#8b949e" font-size="11">Agente / container do loop</text>
+
+  <line x1="280" y1="865" x2="320" y2="865" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="328" y="869" fill="#8b949e" font-size="11">Iteração / repetição</text>
+
+  <line x1="440" y1="865" x2="480" y2="865" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="488" y="869" fill="#8b949e" font-size="11">Fluxo principal</text>
+
+  <!-- Hook details panel -->
+  <rect x="100" y="892" width="700" height="98" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="120" y="914" fill="#3fb950" font-size="12" font-weight="600">Hooks de Plugin (tool.execute.before / after)</text>
+  <text x="120" y="934" fill="#e6edf3" font-size="11">input: { tool: string, args: Record&lt;string, any&gt; }  →  somente-leitura</text>
+  <text x="120" y="952" fill="#e6edf3" font-size="11">output: { args: Record&lt;string, any&gt; }  →  mutação in-place altera args da tool</text>
+  <text x="120" y="970" fill="#8b949e" font-size="10">Ex: MyPlugin injeta "echo [MyPlugin] plugin ativo &amp;&amp;" em output.args.command do bash</text>
+
+  <!-- Glossário final -->
+  <rect x="100" y="1000" width="700" height="90" rx="8" fill="#1c2336" stroke="#30363d" stroke-width="1"/>
+  <text x="120" y="1022" fill="#58a6ff" font-size="12" font-weight="600">Glossário do Runtime</text>
+  <text x="120" y="1042" fill="#8b949e" font-size="11">Config  →  JSON que o usuário escreve (opencode.json, frontmatter .md)</text>
+  <text x="120" y="1058" fill="#8b949e" font-size="11">Schema  →  Contrato de validação (JSON Schema em https://opencode.ai/config.json)</text>
+  <text x="120" y="1074" fill="#8b949e" font-size="11">Runtime →  Motor que executa o comportamento baseado na config + schema</text>
+
+  <!-- Footer -->
+  <text x="450" y="1135" text-anchor="middle" fill="#30363d" font-size="10">opencode runtime diagram  ·  auto-contido  ·  baseado em opencode.ai/config.json</text>
+
+</svg>
