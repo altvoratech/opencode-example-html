@@ -1,0 +1,1933 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Hub de documentação técnica do OpenCode — agente de IA open source para o terminal. Configuração completa (opencode.json), agentes, tools, permissões, MCP, plugins e custom tools."
+    />
+    <title>OpenCode · Hub de Documentação Técnica</title>
+
+    <!-- ── Iconografia: Lucide ───────────────────────────────────────── -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <!-- ── Estilo: Tailwind CSS (Play CDN) ───────────────────────────── -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ── Realce de sintaxe: Prism.js (tema dark) ───────────────────── -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"
+    />
+
+    <!-- ── Tipografia ────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+            colors: {
+              ink: {
+                900: '#0a0d12',
+                850: '#0d1117',
+                800: '#161b22',
+                750: '#1c2336',
+                700: '#21262d',
+                600: '#30363d',
+                500: '#484f58',
+              },
+              fg: { DEFAULT: '#e6edf3', strong: '#f0f6fc', muted: '#8b949e', dim: '#6e7681' },
+              brand: '#58a6ff',
+              ok: '#3fb950',
+              warn: '#d29922',
+              danger: '#f85149',
+              violet: '#bc8cff',
+            },
+          },
+        },
+      };
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer base {
+        html {
+          @apply scroll-smooth;
+          /* header h-16 = 4rem + folga de 0.5rem */
+          scroll-padding-top: 4.5rem;
+        }
+        body {
+          @apply bg-ink-850 font-sans text-fg antialiased;
+          line-height: 1.7;
+        }
+        /* Foco visível global — WCAG 2.2 AA */
+        :focus-visible {
+          outline: 2px solid #58a6ff;
+          outline-offset: 3px;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar {
+          width: 9px;
+          height: 9px;
+        }
+        ::-webkit-scrollbar-track {
+          @apply bg-ink-850;
+        }
+        ::-webkit-scrollbar-thumb {
+          @apply rounded-full bg-ink-600;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          @apply bg-ink-500;
+        }
+        ::selection {
+          background: rgba(88, 166, 255, 0.3);
+        }
+      }
+
+      /* ── Componentes reutilizáveis ──────────────────────────────────── */
+      @layer components {
+        /* Skip link acessibilidade */
+        .skip-link {
+          @apply absolute -top-full left-4 z-[100] rounded-b-md bg-brand px-4 py-2 text-sm font-semibold text-ink-900 transition-[top] focus:top-0;
+        }
+
+        /* Tipografia de conteúdo */
+        .prose-h1 {
+          @apply text-3xl font-extrabold tracking-tight text-fg-strong sm:text-4xl;
+        }
+        .prose-h2 {
+          @apply mb-3 mt-14 scroll-mt-20 border-b border-ink-700 pb-2 text-2xl font-bold tracking-tight text-fg-strong;
+        }
+        .prose-h3 {
+          @apply mb-2 mt-8 scroll-mt-20 text-lg font-semibold text-fg-strong;
+        }
+        .prose-h4 {
+          @apply mb-1 mt-5 text-sm font-semibold uppercase tracking-wider text-fg-muted;
+        }
+        .prose-p {
+          @apply my-3 text-[0.95rem] leading-[1.75] text-fg/90;
+        }
+        .prose-a {
+          @apply font-medium text-brand underline-offset-2 hover:underline focus-visible:underline;
+        }
+        .ic {
+          @apply inline-block h-[1.05em] w-[1.05em] align-[-0.18em];
+        }
+
+        /* Código inline */
+        .ce {
+          @apply rounded border border-ink-700 bg-ink-800 px-1.5 py-0.5 font-mono text-[0.82em] text-fg-strong;
+        }
+
+        /* Bloco de código modular */
+        .code-block {
+          @apply my-5 overflow-hidden rounded-xl border border-ink-600 bg-[#161b22] shadow-lg shadow-black/20;
+        }
+        .code-head {
+          @apply flex items-center justify-between border-b border-ink-600 bg-ink-750 px-4 py-2;
+        }
+        .code-lang {
+          @apply flex items-center gap-1.5 font-mono text-xs font-medium uppercase tracking-wider text-fg-muted;
+        }
+        .copy-btn {
+          @apply inline-flex items-center gap-1.5 rounded-md border border-ink-600 px-2.5 py-1 text-xs font-medium text-fg-muted transition hover:border-ink-500 hover:bg-ink-700 hover:text-fg;
+        }
+        .copy-btn.copied {
+          @apply border-ok/60 bg-ok/10 text-ok;
+        }
+        /* scroll horizontal em telas pequenas */
+        .code-block pre {
+          @apply !m-0 !rounded-none !bg-transparent !p-4 text-[0.82rem] leading-relaxed;
+          overflow-x: auto;
+        }
+        .code-block pre code {
+          @apply font-mono;
+          tab-size: 2;
+          /* garante que o código não quebre linha indesejadamente */
+          white-space: pre;
+        }
+
+        /* Callouts */
+        .callout {
+          @apply my-5 flex gap-3 rounded-lg border-l-4 p-4 text-[0.9rem];
+        }
+        .callout-title {
+          @apply mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider;
+        }
+        .callout > .ci {
+          @apply mt-0.5 h-5 w-5 flex-shrink-0;
+        }
+        .callout p:last-child {
+          @apply mb-0;
+        }
+        .callout-info {
+          @apply border-brand bg-brand/10 text-fg/90;
+        }
+        .callout-info .callout-title,
+        .callout-info .ci {
+          @apply text-brand;
+        }
+        .callout-note {
+          @apply border-violet bg-violet/10 text-fg/90;
+        }
+        .callout-note .callout-title,
+        .callout-note .ci {
+          @apply text-violet;
+        }
+        .callout-warn {
+          @apply border-warn bg-warn/10 text-fg/90;
+        }
+        .callout-warn .callout-title,
+        .callout-warn .ci {
+          @apply text-warn;
+        }
+        .callout-danger {
+          @apply border-danger bg-danger/10 text-fg/90;
+        }
+        .callout-danger .callout-title,
+        .callout-danger .ci {
+          @apply text-danger;
+        }
+        .callout-ok {
+          @apply border-ok bg-ok/10 text-fg/90;
+        }
+        .callout-ok .callout-title,
+        .callout-ok .ci {
+          @apply text-ok;
+        }
+
+        /* Tabelas de especificação */
+        .spec-wrap {
+          @apply my-5 overflow-x-auto rounded-xl border border-ink-700;
+          /* Sombra lateral indica overflow scrollável */
+          -webkit-overflow-scrolling: touch;
+        }
+        .spec {
+          @apply w-full border-collapse text-left text-[0.875rem];
+          min-width: 480px;
+        }
+        .spec thead th {
+          @apply whitespace-nowrap border-b border-ink-600 bg-ink-800 px-4 py-2.5 font-semibold text-fg-strong;
+        }
+        .spec tbody td {
+          @apply border-b border-ink-700 px-4 py-2.5 align-top text-fg/85;
+        }
+        .spec tbody tr:last-child td {
+          @apply border-b-0;
+        }
+        .spec tbody tr:hover td {
+          @apply bg-ink-800/60;
+        }
+
+        /* Cartões (grid de features) */
+        .card {
+          @apply rounded-xl border border-ink-700 bg-ink-800/60 p-5 transition hover:border-ink-500 hover:bg-ink-800;
+        }
+        .card-icon {
+          @apply mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg border;
+        }
+        .card-title {
+          @apply mb-1 font-semibold text-fg-strong;
+        }
+        .card p {
+          @apply text-sm text-fg-muted;
+        }
+
+        /* Tags / pills */
+        .pill {
+          @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+        }
+        .pill-blue {
+          @apply border-brand/50 bg-brand/10 text-brand;
+        }
+        .pill-green {
+          @apply border-ok/50 bg-ok/10 text-ok;
+        }
+        .pill-red {
+          @apply border-danger/50 bg-danger/10 text-danger;
+        }
+        .pill-yellow {
+          @apply border-warn/50 bg-warn/10 text-warn;
+        }
+        .pill-violet {
+          @apply border-violet/50 bg-violet/10 text-violet;
+        }
+        .pill-gray {
+          @apply border-ink-600 bg-ink-700/50 text-fg-muted;
+        }
+
+        /* Passos numerados (tutoriais) */
+        .step {
+          @apply relative rounded-xl border border-ink-700 bg-ink-800/50 p-5 pl-14 transition hover:border-ink-500;
+        }
+        .step-num {
+          @apply absolute left-4 top-5 flex h-7 w-7 items-center justify-center rounded-full border-2 border-brand bg-ink-750 font-mono text-sm font-bold text-brand;
+          aria-hidden: true;
+        }
+        .step-title {
+          @apply mb-1 font-semibold text-fg-strong;
+        }
+
+        /* Navegação lateral */
+        .toc-link {
+          @apply block rounded-md px-3 py-1.5 text-[0.85rem] text-fg-muted transition hover:bg-ink-800 hover:text-fg;
+        }
+        .toc-link.active {
+          @apply bg-brand/10 font-medium text-brand;
+        }
+        .toc-sub {
+          @apply ml-3 border-l border-ink-700 py-0.5 pl-3 text-[0.82rem];
+        }
+        .toc-group {
+          @apply mb-1 mt-4 px-3 text-[0.7rem] font-bold uppercase tracking-widest text-fg-dim;
+        }
+
+        /* Teclas */
+        .kbd {
+          @apply inline-block rounded border border-ink-600 border-b-2 bg-ink-800 px-1.5 py-0.5 font-mono text-xs text-fg-strong;
+        }
+
+        /* Divisor de seção com label */
+        .section-divider {
+          @apply my-2 flex items-center gap-2;
+        }
+        .section-divider::before,
+        .section-divider::after {
+          content: '';
+          @apply flex-1 border-t border-ink-700;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Skip link: primeiro elemento focável — usuários de teclado/leitor de tela -->
+    <a href="#conteudo-principal" class="skip-link">Ir para o conteúdo</a>
+
+    <!-- ════════════════════════ TOP BAR ════════════════════════ -->
+    <header
+      role="banner"
+      class="sticky top-0 z-40 border-b border-ink-700 bg-ink-850/85 backdrop-blur supports-[backdrop-filter]:bg-ink-850/70"
+    >
+      <div class="mx-auto flex h-16 max-w-[1400px] items-center gap-4 px-4 sm:px-6">
+        <button
+          id="navToggle"
+          class="rounded-md border border-ink-600 p-1.5 text-fg-muted hover:text-fg lg:hidden"
+          aria-label="Abrir menu de navegação"
+          aria-expanded="false"
+          aria-controls="sidebar"
+        >
+          <i data-lucide="menu" class="ic h-5 w-5"></i>
+        </button>
+
+        <a href="#topo" class="flex items-center gap-2.5">
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-violet text-ink-900"
+          >
+            <i data-lucide="terminal" class="ic h-5 w-5"></i>
+          </span>
+          <span class="text-[1.05rem] font-bold tracking-tight text-fg-strong">OpenCode</span>
+          <span class="pill pill-gray hidden sm:inline-flex">docs</span>
+        </a>
+
+        <nav class="ml-auto flex items-center gap-2" aria-label="Navegação do documento">
+          <a
+            href="index.html"
+            class="hidden items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-fg-muted transition hover:text-fg sm:inline-flex"
+            aria-label="Voltar ao Centro de Documentação"
+          >
+            <i data-lucide="library" class="ic h-4 w-4"></i>
+            <span class="hidden md:inline">Centro de Docs</span>
+          </a>
+          <a
+            href="https://opencode.ai/docs/"
+            class="hidden items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-fg-muted transition hover:text-fg sm:inline-flex"
+          >
+            <i data-lucide="book-open" class="ic h-4 w-4"></i>
+            <span class="hidden md:inline">Docs oficiais</span>
+          </a>
+          <a
+            href="https://github.com/opencode-ai/opencode"
+            class="inline-flex items-center gap-1.5 rounded-md border border-ink-600 px-3 py-1.5 text-sm font-medium text-fg transition hover:border-ink-500 hover:bg-ink-800"
+          >
+            <i data-lucide="github" class="ic h-4 w-4"></i>
+            <span class="hidden sm:inline">GitHub</span>
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="mx-auto flex max-w-[1400px]">
+      <!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+      <aside
+        id="sidebar"
+        class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full overflow-y-auto border-r border-ink-700 bg-ink-850 px-4 pb-12 pt-20 transition-transform lg:sticky lg:top-16 lg:z-0 lg:h-[calc(100vh-4rem)] lg:translate-x-0 lg:pt-6"
+        aria-label="Sumário de navegação"
+      >
+        <button
+          id="navClose"
+          class="absolute right-4 top-5 rounded-md border border-ink-600 p-1.5 text-fg-muted hover:text-fg lg:hidden"
+          aria-label="Fechar menu de navegação"
+        >
+          <i data-lucide="x" class="ic h-5 w-5"></i>
+        </button>
+
+        <nav aria-label="Índice do documento" class="space-y-0.5">
+          <a href="#visao-geral" class="toc-link active" aria-current="location">Visão Geral</a>
+          <a href="#arquitetura" class="toc-link">Arquitetura</a>
+          <a href="#instalacao" class="toc-link">Instalação</a>
+
+          <p class="toc-group">Configuração</p>
+          <a href="#config-base" class="toc-link">opencode.json</a>
+          <a href="#config-carregamento" class="toc-link toc-sub">Carregamento &amp; Precedência</a>
+          <a href="#config-modelos" class="toc-link toc-sub">Modelos &amp; Provedores</a>
+          <a href="#config-agentes" class="toc-link toc-sub">Agentes</a>
+          <a href="#config-permissoes" class="toc-link toc-sub">Permissões</a>
+          <a href="#config-mcp" class="toc-link toc-sub">Servidores MCP</a>
+          <a href="#config-comandos" class="toc-link toc-sub">Comandos</a>
+          <a href="#config-formatter" class="toc-link toc-sub">Formatter &amp; LSP</a>
+          <a href="#config-outras" class="toc-link toc-sub">Demais opções</a>
+          <a href="#config-referencia" class="toc-link toc-sub">Referência completa</a>
+
+          <p class="toc-group">Extensão</p>
+          <a href="#agentes-custom" class="toc-link">Agentes Customizados</a>
+          <a href="#tools" class="toc-link">Tools Nativas</a>
+          <a href="#tutorial-plugins" class="toc-link">Tutorial · Plugins</a>
+          <a href="#hooks" class="toc-link toc-sub">Catálogo de Hooks</a>
+          <a href="#tutorial-tools" class="toc-link">Tutorial · Custom Tools</a>
+
+          <p class="toc-group">Referência</p>
+          <a href="#cli" class="toc-link">CLI</a>
+          <a href="#glossario" class="toc-link">Glossário</a>
+        </nav>
+      </aside>
+
+      <!-- overlay mobile -->
+      <div id="navOverlay" class="fixed inset-0 z-40 hidden bg-black/60 lg:hidden" aria-hidden="true"></div>
+
+      <!-- ════════════════════════ CONTEÚDO ════════════════════════ -->
+      <main id="conteudo-principal" tabindex="-1" class="min-w-0 flex-1 px-5 py-10 sm:px-8 lg:px-12 xl:px-16">
+        <div class="mx-auto max-w-3xl">
+          <!-- ─────────────── HERO ─────────────── -->
+          <div id="topo" class="mb-2 flex flex-wrap items-center gap-2">
+            <span class="pill pill-blue"><i data-lucide="box" class="ic h-3 w-3"></i> Open Source</span>
+            <span class="pill pill-violet">Terminal · Desktop · IDE</span>
+            <span class="pill pill-green">Multi-provider</span>
+          </div>
+          <h1 class="prose-h1">OpenCode — Agente de IA para o terminal</h1>
+          <p class="mt-4 text-lg leading-relaxed text-fg-muted">
+            O <strong class="text-fg">OpenCode</strong> é um agente de IA <em>open source</em> que
+            acelera o fluxo de desenvolvimento de software. Roda no terminal (TUI), como app desktop
+            ou extensão de IDE, é agnóstico de provedor (Claude, OpenAI, Google, modelos locais) e
+            tem uma arquitetura cliente/servidor que permite operação remota. Esta página documenta o
+            schema de configuração, o sistema de agentes, as <em>tools</em>, as permissões, os
+            servidores MCP e — em detalhe — como criar <strong class="text-fg">plugins</strong> e
+            <strong class="text-fg">custom tools</strong>.
+          </p>
+
+          <!-- ════════════════ VISÃO GERAL ════════════════ -->
+          <section id="visao-geral" aria-labelledby="visao-geral-h">
+            <h2 id="visao-geral-h" class="prose-h2">Visão Geral</h2>
+            <p class="prose-p">
+              O OpenCode evita o <em>vendor lock-in</em> por design: você conecta múltiplos provedores
+              de LLM ao mesmo tempo e troca entre eles sem atrito. A experiência é construída para
+              quem vive no terminal — navegação por teclado, customização profunda e integração nativa
+              com <abbr title="Language Server Protocol">LSP</abbr> para compreensão de código.
+            </p>
+
+            <div class="my-6 grid gap-4 sm:grid-cols-2">
+              <article class="card">
+                <span class="card-icon border-brand/40 bg-brand/10 text-brand">
+                  <i data-lucide="unplug" class="ic h-5 w-5"></i>
+                </span>
+                <h3 class="card-title">Agnóstico de provedor</h3>
+                <p>Claude, OpenAI, Google, Groq, Bedrock e modelos locais. Defina o padrão e sobrescreva por agente.</p>
+              </article>
+              <article class="card">
+                <span class="card-icon border-violet/40 bg-violet/10 text-violet">
+                  <i data-lucide="square-terminal" class="ic h-5 w-5"></i>
+                </span>
+                <h3 class="card-title">Terminal-first</h3>
+                <p>TUI focada em teclado. Troque de agente com <span class="kbd">Tab</span> ou via <span class="ce">@menção</span>.</p>
+              </article>
+              <article class="card">
+                <span class="card-icon border-ok/40 bg-ok/10 text-ok">
+                  <i data-lucide="network" class="ic h-5 w-5"></i>
+                </span>
+                <h3 class="card-title">Cliente / Servidor</h3>
+                <p>Separe a interface de controle do ambiente de execução — rode <span class="ce">opencode serve</span> e conecte remotamente.</p>
+              </article>
+              <article class="card">
+                <span class="card-icon border-warn/40 bg-warn/10 text-warn">
+                  <i data-lucide="puzzle" class="ic h-5 w-5"></i>
+                </span>
+                <h3 class="card-title">Extensível</h3>
+                <p>Plugins com hooks de ciclo de vida, custom tools em TS/JS e servidores MCP locais ou remotos.</p>
+              </article>
+            </div>
+
+            <div class="callout callout-info">
+              <i data-lucide="info" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>O contrato de configuração</span></p>
+                <p>
+                  Toda configuração é validada contra um <strong>JSON Schema</strong> publicado em
+                  <a class="prose-a" href="https://opencode.ai/config.json">opencode.ai/config.json</a>.
+                  Referenciá-lo no topo do seu <span class="ce">opencode.json</span> habilita
+                  autocompletar e validação em tempo real no editor.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════════════════ ARQUITETURA ════════════════ -->
+          <section id="arquitetura" aria-labelledby="arquitetura-h">
+            <h2 id="arquitetura-h" class="prose-h2">Arquitetura</h2>
+            <p class="prose-p">
+              O comportamento do runtime nasce da combinação de três camadas: a
+              <strong>configuração</strong> que você escreve, o <strong>schema</strong> que a valida e
+              o <strong>runtime</strong> que a executa orquestrando o <em>agent loop</em>.
+            </p>
+
+            <div class="my-6 grid gap-4 md:grid-cols-3">
+              <div class="card border-ok/30 bg-ok/5">
+                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-ok">1 · Config</p>
+                <p>O JSON que você escreve: <span class="ce">opencode.json</span>, frontmatter de agentes <span class="ce">.md</span>, arquivos em <span class="ce">.opencode/</span>.</p>
+              </div>
+              <div class="card border-warn/30 bg-warn/5">
+                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-warn">2 · Schema</p>
+                <p>Contrato de validação (JSON Schema) que define a forma esperada da config e habilita o IntelliSense.</p>
+              </div>
+              <div class="card border-violet/30 bg-violet/5">
+                <p class="mb-1 text-xs font-bold uppercase tracking-wider text-violet">3 · Runtime</p>
+                <p>O motor: roteia o prompt para um agente, roda o loop LLM↔tools, dispara hooks e aplica permissões.</p>
+              </div>
+            </div>
+
+            <!-- Diagrama de runtime (opencode-runtime.svg) -->
+            <figure class="my-8">
+              <img
+                src="opencode-runtime.svg"
+                alt="Diagrama do runtime do OpenCode: fluxo de config → schema → runtime, mostrando o agent loop com LLM, tool calling, hooks e sistema de permissões"
+                class="w-full rounded-xl border border-ink-700 bg-ink-900/40"
+                width="900"
+                height="1200"
+                loading="lazy"
+              />
+              <figcaption class="mt-2 text-center text-xs text-fg-dim">
+                Diagrama do runtime — config, schema e agent loop em detalhe
+              </figcaption>
+            </figure>
+
+            <h3 class="prose-h3">O ciclo de uma requisição</h3>
+            <p class="prose-p">
+              Cada mensagem percorre quatro etapas. O coração é o <strong>agent loop</strong>: um ciclo
+              iterativo onde o modelo pensa, decide chamar uma <em>tool</em> (ou responder), os hooks
+              são disparados e a tool executa sob a política de permissão.
+            </p>
+
+            <ol class="my-6 space-y-3">
+              <li class="step">
+                <span class="step-num">1</span>
+                <p class="step-title">Prompt &amp; Roteamento</p>
+                <p class="text-sm text-fg-muted">
+                  O usuário envia texto, opcionalmente com <span class="ce">@agente</span>. O runtime
+                  seleciona o <span class="ce">default_agent</span> ou o agente mencionado e carrega seu
+                  modelo, prompt e permissões.
+                </p>
+              </li>
+              <li class="step">
+                <span class="step-num">2</span>
+                <p class="step-title">LLM · Think</p>
+                <p class="text-sm text-fg-muted">
+                  O modelo processa o contexto e decide o próximo passo: chamar uma tool com argumentos
+                  ou produzir a resposta final.
+                </p>
+              </li>
+              <li class="step">
+                <span class="step-num">3</span>
+                <p class="step-title">Hooks &amp; Execução de Tool</p>
+                <p class="text-sm text-fg-muted">
+                  <span class="ce">tool.execute.before</span> roda antes (pode mutar os argumentos), a
+                  política de permissão decide <span class="pill pill-green">allow</span>
+                  <span class="pill pill-yellow">ask</span> <span class="pill pill-red">deny</span>, a
+                  tool executa e <span class="ce">tool.execute.after</span> roda depois. O loop repete
+                  até a resposta final ou o limite de <span class="ce">steps</span>.
+                </p>
+              </li>
+              <li class="step">
+                <span class="step-num">4</span>
+                <p class="step-title">Output</p>
+                <p class="text-sm text-fg-muted">
+                  A resposta do modelo é combinada com os resultados das tools e exibida. O ciclo
+                  encerra — ou recomeça com um novo prompt.
+                </p>
+              </li>
+            </ol>
+
+            <div class="callout callout-warn">
+              <i data-lucide="repeat" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Limite de iterações</span></p>
+                <p>
+                  O agent loop respeita <span class="ce">steps</span> (antigo <span class="ce">maxSteps</span>):
+                  o número máximo de iterações antes de o agente ser forçado ao modo somente-texto.
+                  Isso impede loops infinitos quando o <em>tool calling</em> não converge.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════════════════ INSTALAÇÃO ════════════════ -->
+          <section id="instalacao" aria-labelledby="instalacao-h">
+            <h2 id="instalacao-h" class="prose-h2">Instalação</h2>
+            <p class="prose-p">Escolha o método de instalação adequado ao seu ambiente:</p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="terminal" class="ic h-3.5 w-3.5"></i> bash</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-bash"># Script de instalação (recomendado)
+curl -fsSL https://opencode.ai/install | bash
+
+# Homebrew (macOS / Linux)
+brew install opencode-ai/tap/opencode
+
+# npm
+npm install -g opencode
+
+# Go
+go install github.com/opencode-ai/opencode@latest
+
+# Verificar
+opencode --version</code></pre>
+            </figure>
+
+            <h3 class="prose-h3">Variáveis de ambiente</h3>
+            <p class="prose-p">Configure a chave do provedor desejado antes do primeiro uso:</p>
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="key-round" class="ic h-3.5 w-3.5"></i> bash</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-bash">export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-..."
+export GOOGLE_API_KEY="..."
+export GROQ_API_KEY="..."
+
+# Opcionais do OpenCode
+export OPENCODE_CONFIG="$HOME/.config/opencode/opencode.json"
+export OPENCODE_PERMISSION="ask"   # nível de permissão padrão</code></pre>
+            </figure>
+
+            <div class="callout callout-ok">
+              <i data-lucide="lightbulb" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Inicialize o projeto</span></p>
+                <p>
+                  Rode <span class="ce">opencode</span> e use o comando <span class="ce">/init</span>
+                  para gerar um <span class="ce">AGENTS.md</span> — um resumo da estrutura, padrões e
+                  stack do seu projeto. Commite-o no versionamento para que o agente entenda seu código.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════════════════ CONFIGURAÇÃO ════════════════ -->
+          <section id="config-base" aria-labelledby="config-base-h">
+            <h2 id="config-base-h" class="prose-h2">Configuração — <code class="ce">opencode.json</code></h2>
+            <p class="prose-p">
+              A configuração vive em <span class="ce">opencode.json</span> na raiz do projeto, ou
+              globalmente em <span class="ce">~/.config/opencode/opencode.json</span>. A config de
+              projeto sobrescreve a global. Sempre comece referenciando o schema:
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="file-json" class="ic h-3.5 w-3.5"></i> opencode.json</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-sonnet-4-20250514",
+  "small_model": "anthropic/claude-haiku-4-5-20251001",
+  "default_agent": "build",
+  "username": "ada",
+  "share": "manual",
+  "autoupdate": "notify",
+  "permission": {
+    "edit": "ask",
+    "bash": "ask"
+  }
+}</code></pre>
+            </figure>
+
+            <div class="callout callout-note">
+              <i data-lucide="route" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Formato de modelo</span></p>
+                <p>
+                  Modelos seguem o formato <span class="ce">provider/model</span> — por exemplo
+                  <span class="ce">anthropic/claude-sonnet-4-20250514</span> ou
+                  <span class="ce">openai/gpt-4o</span>. O <span class="ce">small_model</span> é usado
+                  para tarefas leves (títulos de sessão, sumarização) para reduzir custo.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Carregamento & Precedência ── -->
+          <section id="config-carregamento" aria-labelledby="config-carregamento-h">
+            <h3 id="config-carregamento-h" class="prose-h3">Carregamento &amp; Precedência</h3>
+            <p class="prose-p">
+              O config não vem de um arquivo só — o OpenCode <strong>mescla várias camadas</strong>, e as
+              de baixo sobrescrevem as de cima <em>apenas nas chaves conflitantes</em> (o resto é
+              preservado). Esta é a ordem oficial:
+            </p>
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead>
+                  <tr><th scope="col">#</th><th scope="col">Camada</th><th scope="col">Origem</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>Remoto</td><td><code class="ce">.well-known/opencode</code> — defaults da organização</td></tr>
+                  <tr><td>2</td><td>Global</td><td><code class="ce">~/.config/opencode/opencode.json</code></td></tr>
+                  <tr><td>3</td><td>Path custom</td><td>variável <code class="ce">OPENCODE_CONFIG</code></td></tr>
+                  <tr><td>4</td><td><strong>Projeto</strong></td><td><code class="ce">opencode.json</code> na raiz do projeto</td></tr>
+                  <tr><td>5</td><td>Diretórios <code class="ce">.opencode/</code></td><td>agents, commands, plugins (auto-discovery)</td></tr>
+                  <tr><td>6</td><td>Inline</td><td>variável <code class="ce">OPENCODE_CONFIG_CONTENT</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h4 class="prose-h4">Descoberta do projeto</h4>
+            <p class="prose-p">
+              Ao iniciar, o OpenCode procura o config no diretório atual e
+              <strong>sobe a árvore até o diretório <code class="ce">.git</code> mais próximo</strong>. A
+              raiz do projeto é definida por proximidade do <code class="ce">.git</code>, não por um
+              marcador explícito.
+            </p>
+
+            <div class="callout callout-note">
+              <i data-lucide="git-branch" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>A regra que pega todo mundo</span></p>
+                <p>
+                  "Projeto sobrescreve global" é <strong>nativo — mas só vale para o projeto onde você
+                  está fisicamente</strong> (dentro da fronteira do <code class="ce">.git</code>). Se você
+                  roda o OpenCode de outro diretório, o <code class="ce">opencode.json</code> daquele
+                  outro projeto <strong>não</strong> é carregado. O config de um projeto não "vaza" para
+                  fora do <code class="ce">.git</code> dele.
+                </p>
+              </div>
+            </div>
+
+            <h4 class="prose-h4">Escapando da fronteira: config via plugin</h4>
+            <p class="prose-p">
+              E aqui mora um padrão poderoso, que é a versão <strong>imperativa</strong> da precedência
+              acima. Como um plugin carrega <em>antes</em> e roda código arbitrário, ele pode usar o hook
+              <span class="ce">config</span> para <strong>ler um <code class="ce">opencode.json</code> de
+              qualquer lugar do disco e injetá-lo no config em runtime</strong> — aplicando agentes e
+              permissões de um projeto <em>globalmente</em>, fora da fronteira do
+              <code class="ce">.git</code>.
+            </p>
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> hook config — injeção em runtime</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-typescript">import type { Plugin } from "@opencode-ai/plugin"
+import * as fs from "node:fs/promises"
+import * as path from "node:path"
+
+export const BootstrapPlugin: Plugin = async () =&gt; {
+  return {
+    // O hook `config` recebe o config do runtime e pode MUTÁ-LO.
+    config: async (config) =&gt; {
+      // repoRoot relativo ao PRÓPRIO plugin — não ao cwd.
+      const repoRoot = path.resolve(import.meta.dir, "../..")
+      const raw = await fs.readFile(path.join(repoRoot, "opencode.json"), "utf-8")
+      const project = JSON.parse(raw)
+
+      // Merge: defaults do projeto primeiro, override do usuário vence.
+      config.agent = { ...project.agent, ...(config.agent ?? {}) }
+      config.permission = { ...project.permission, ...(config.permission ?? {}) }
+    },
+  }
+}</code></pre>
+            </figure>
+            <div class="callout callout-warn">
+              <i data-lucide="key-round" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>A semente declarativa é irredutível</span></p>
+                <p>
+                  Mesmo nesse padrão 100% imperativo, sobra <strong>uma</strong> coisa que precisa ser
+                  declarativa: a entrada no array <span class="ce">plugin</span> do config global que
+                  carrega o bootstrapper. É a maçaneta da porta imperativa — o único dado sem escape para
+                  código, porque é justamente ele que liga o código. Sem ela, nada sobe (e o OpenCode
+                  <strong>falha em silêncio</strong>: path errado não gera erro, só não carrega).
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Modelos & Provedores ── -->
+          <section id="config-modelos" aria-labelledby="config-modelos-h">
+            <h3 id="config-modelos-h" class="prose-h3">Modelos &amp; Provedores</h3>
+            <p class="prose-p">
+              O bloco <span class="ce">provider</span> permite adicionar provedores customizados,
+              sobrescrever opções (chave de API, <span class="ce">baseURL</span>, timeouts) e declarar
+              modelos com seus custos, limites e modalidades.
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="file-json" class="ic h-3.5 w-3.5"></i> provider</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "anthropic": {
+      "options": {
+        "apiKey": "{env:ANTHROPIC_API_KEY}",
+        "setCacheKey": true,
+        "timeout": 300000
+      }
+    },
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": { "baseURL": "http://localhost:11434/v1" },
+      "models": {
+        "llama3.1": {
+          "name": "Llama 3.1",
+          "tool_call": true,
+          "limit": { "context": 131072, "output": 8192 }
+        }
+      }
+    }
+  }
+}</code></pre>
+            </figure>
+
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead>
+                  <tr><th scope="col">Campo (provider.*)</th><th scope="col">Tipo</th><th scope="col">Descrição</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code class="ce">npm</code></td><td><code class="ce">string</code></td><td>Pacote npm do SDK (ex.: <code class="ce">@ai-sdk/openai-compatible</code>).</td></tr>
+                  <tr><td><code class="ce">name</code></td><td><code class="ce">string</code></td><td>Nome de exibição do provedor.</td></tr>
+                  <tr><td><code class="ce">options.apiKey</code></td><td><code class="ce">string</code></td><td>Chave de API (use <code class="ce">{env:VAR}</code> para variáveis).</td></tr>
+                  <tr><td><code class="ce">options.baseURL</code></td><td><code class="ce">string</code></td><td>Endpoint da API (útil p/ self-hosted e compatíveis).</td></tr>
+                  <tr><td><code class="ce">options.setCacheKey</code></td><td><code class="ce">boolean</code></td><td>Habilita prompt caching. Padrão <code class="ce">false</code>.</td></tr>
+                  <tr><td><code class="ce">options.timeout</code></td><td><code class="ce">integer | false</code></td><td>Timeout em ms. Padrão <code class="ce">300000</code> (5 min).</td></tr>
+                  <tr><td><code class="ce">models.*.limit</code></td><td><code class="ce">object</code></td><td><code class="ce">{ context, output }</code> — janela de contexto e saída máxima.</td></tr>
+                  <tr><td><code class="ce">models.*.cost</code></td><td><code class="ce">object</code></td><td><code class="ce">{ input, output, cache_read?, cache_write? }</code>.</td></tr>
+                  <tr><td><code class="ce">models.*.modalities</code></td><td><code class="ce">object</code></td><td><code class="ce">{ input[], output[] }</code> — text, image, audio, video, pdf.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ── Agentes ── -->
+          <section id="config-agentes" aria-labelledby="config-agentes-h">
+            <h3 id="config-agentes-h" class="prose-h3">Agentes</h3>
+            <p class="prose-p">
+              O bloco <span class="ce">agent</span> mapeia nomes para configurações. Existem agentes
+              embutidos (<span class="pill pill-blue">build</span> <span class="pill pill-blue">plan</span>
+              <span class="pill pill-blue">general</span> <span class="pill pill-blue">explore</span>) e
+              você pode definir os seus. O modo determina como o agente é invocado:
+              <span class="ce">primary</span> (agente principal),
+              <span class="ce">subagent</span> (acionado via <span class="ce">@nome</span>) ou
+              <span class="ce">all</span>.
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="file-json" class="ic h-3.5 w-3.5"></i> agent</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "plan": {
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "permission": { "edit": "deny", "bash": "deny" }
+    },
+    "reviewer": {
+      "description": "Especialista em revisão de código e segurança",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-20250514",
+      "temperature": 0.3,
+      "top_p": 0.9,
+      "prompt": "{file:./.opencode/agent/reviewer.md}",
+      "steps": 20,
+      "color": "#bc8cff",
+      "hidden": false,
+      "permission": {
+        "read": "allow",
+        "grep": "allow",
+        "edit": "deny",
+        "bash": "deny",
+        "webfetch": "deny"
+      }
+    }
+  }
+}</code></pre>
+            </figure>
+
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead>
+                  <tr><th scope="col">Campo (agent.*)</th><th scope="col">Tipo</th><th scope="col">Descrição</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code class="ce">description</code></td><td><code class="ce">string</code></td><td>Quando usar este agente (essencial para subagents).</td></tr>
+                  <tr><td><code class="ce">mode</code></td><td><code class="ce">"primary" | "subagent" | "all"</code></td><td>Como o agente é acionado.</td></tr>
+                  <tr><td><code class="ce">model</code></td><td><code class="ce">string</code></td><td>Sobrescreve o modelo padrão (<code class="ce">provider/model</code>).</td></tr>
+                  <tr><td><code class="ce">temperature</code></td><td><code class="ce">number</code></td><td>Aleatoriedade da resposta (0.0–1.0).</td></tr>
+                  <tr><td><code class="ce">top_p</code></td><td><code class="ce">number</code></td><td>Amostragem nucleus.</td></tr>
+                  <tr><td><code class="ce">prompt</code></td><td><code class="ce">string</code></td><td>System prompt inline ou <code class="ce">{file:caminho.md}</code>.</td></tr>
+                  <tr><td><code class="ce">steps</code></td><td><code class="ce">integer &gt; 0</code></td><td>Máx. de iterações antes do modo texto. (<code class="ce">maxSteps</code> é deprecado.)</td></tr>
+                  <tr><td><code class="ce">permission</code></td><td><code class="ce">object</code></td><td>Sobrescreve permissões no escopo do agente.</td></tr>
+                  <tr><td><code class="ce">color</code></td><td><code class="ce">hex | tema</code></td><td><code class="ce">#RRGGBB</code> ou <code class="ce">primary/accent/success/warning/error/info</code>.</td></tr>
+                  <tr><td><code class="ce">hidden</code></td><td><code class="ce">boolean</code></td><td>Oculta do menu <code class="ce">@</code>. Padrão <code class="ce">false</code>.</td></tr>
+                  <tr><td><code class="ce">disable</code></td><td><code class="ce">boolean</code></td><td>Desativa o agente.</td></tr>
+                  <tr><td><code class="ce">tools</code></td><td><code class="ce">object</code></td><td><span class="pill pill-yellow">deprecado</span> — prefira <code class="ce">permission</code>.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ── Permissões ── -->
+          <section id="config-permissoes" aria-labelledby="config-permissoes-h">
+            <h3 id="config-permissoes-h" class="prose-h3">Permissões</h3>
+            <p class="prose-p">
+              Cada permissão é uma ação — <span class="pill pill-green">allow</span> executa sem
+              aprovação, <span class="pill pill-yellow">ask</span> pede confirmação e
+              <span class="pill pill-red">deny</span> bloqueia. Você pode aplicar uma ação simples a
+              uma tool, ou um <strong>objeto com padrões wildcard</strong> para controle granular —
+              ideal para o <span class="ce">bash</span>.
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="shield" class="ic h-3.5 w-3.5"></i> permission</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "read": "allow",
+    "grep": "allow",
+    "glob": "allow",
+    "list": "allow",
+    "webfetch": "ask",
+    "edit": "ask",
+    "bash": {
+      "*": "ask",
+      "git *": "allow",
+      "npm *": "allow",
+      "ls *": "allow",
+      "rm *": "deny",
+      "git push *": "deny"
+    }
+  }
+}</code></pre>
+            </figure>
+
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead>
+                  <tr><th scope="col">Chave</th><th scope="col">Aplica-se a</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td><code class="ce">read · edit · write</code></td><td>Operações de arquivo.</td></tr>
+                  <tr><td><code class="ce">bash</code></td><td>Execução de shell (suporta wildcard por comando).</td></tr>
+                  <tr><td><code class="ce">glob · grep · list</code></td><td>Busca e listagem.</td></tr>
+                  <tr><td><code class="ce">webfetch · websearch</code></td><td>Acesso à web.</td></tr>
+                  <tr><td><code class="ce">task</code></td><td>Delegação para subagents.</td></tr>
+                  <tr><td><code class="ce">external_directory</code></td><td>Acesso a diretórios fora do projeto.</td></tr>
+                  <tr><td><code class="ce">repo_clone · repo_overview · lsp · skill</code></td><td>Operações de repositório, LSP e skills.</td></tr>
+                  <tr><td><code class="ce">doom_loop</code></td><td>Salvaguarda contra loops repetitivos.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="callout callout-danger">
+              <i data-lucide="shield-alert" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Padrões seguros</span></p>
+                <p>
+                  A maioria das tools usa <span class="ce">allow</span> por padrão, exceto salvaguardas:
+                  <span class="ce">doom_loop</span> e <span class="ce">external_directory</span> usam
+                  <span class="ce">ask</span>, e arquivos <span class="ce">.env*</span> usam
+                  <span class="ce">deny</span>. Permissões de agente têm precedência sobre as globais.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout callout-note">
+              <i data-lucide="git-compare" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Permissão como dado ou como código</span></p>
+                <p>
+                  O bloco acima é a porta <strong>declarativa</strong>. Mas há uma porta
+                  <strong>imperativa</strong>: um plugin pode interceptar o hook
+                  <span class="ce">permission.ask</span> e decidir
+                  <span class="pill pill-green">allow</span> <span class="pill pill-yellow">ask</span>
+                  <span class="pill pill-red">deny</span> com <strong>lógica condicional de verdade</strong>
+                  (<span class="ce">if</span>, regex, hora do dia, estado do projeto…). JSON e código não são
+                  dois sistemas — são <strong>duas portas para o mesmo runtime</strong>. Use o JSON
+                  enquanto regra estática basta; desça para código quando precisar de condicional.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── MCP ── -->
+          <section id="config-mcp" aria-labelledby="config-mcp-h">
+            <h3 id="config-mcp-h" class="prose-h3">Servidores MCP</h3>
+            <p class="prose-p">
+              O bloco <span class="ce">mcp</span> conecta servidores
+              <abbr title="Model Context Protocol">MCP</abbr> para estender as capacidades do agente
+              (bancos de dados, APIs, ferramentas externas). Há dois tipos:
+              <span class="ce">local</span> (processo iniciado por comando) e
+              <span class="ce">remote</span> (URL, com OAuth opcional).
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="server" class="ic h-3.5 w-3.5"></i> mcp</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "postgres": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-postgres"],
+      "environment": { "DATABASE_URL": "{env:DATABASE_URL}" },
+      "enabled": true,
+      "timeout": 5000
+    },
+    "company-api": {
+      "type": "remote",
+      "url": "https://mcp.example.com/sse",
+      "enabled": true,
+      "headers": { "X-Team": "platform" },
+      "oauth": {
+        "scope": "read:tools",
+        "callbackPort": 19876
+      }
+    }
+  }
+}</code></pre>
+            </figure>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="spec-wrap !my-2">
+                <table class="spec">
+                  <thead><tr><th scope="col">Local</th><th scope="col">Tipo</th></tr></thead>
+                  <tbody>
+                    <tr><td><code class="ce">type</code></td><td><code class="ce">"local"</code></td></tr>
+                    <tr><td><code class="ce">command</code></td><td><code class="ce">string[]</code> (obrig.)</td></tr>
+                    <tr><td><code class="ce">environment</code></td><td><code class="ce">object</code></td></tr>
+                    <tr><td><code class="ce">enabled</code></td><td><code class="ce">boolean</code></td></tr>
+                    <tr><td><code class="ce">timeout</code></td><td><code class="ce">integer</code> (def. 5000)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="spec-wrap !my-2">
+                <table class="spec">
+                  <thead><tr><th scope="col">Remote</th><th scope="col">Tipo</th></tr></thead>
+                  <tbody>
+                    <tr><td><code class="ce">type</code></td><td><code class="ce">"remote"</code></td></tr>
+                    <tr><td><code class="ce">url</code></td><td><code class="ce">string</code> (obrig.)</td></tr>
+                    <tr><td><code class="ce">headers</code></td><td><code class="ce">object</code></td></tr>
+                    <tr><td><code class="ce">oauth</code></td><td><code class="ce">object | false</code></td></tr>
+                    <tr><td><code class="ce">timeout</code></td><td><code class="ce">integer</code> (def. 5000)</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Comandos ── -->
+          <section id="config-comandos" aria-labelledby="config-comandos-h">
+            <h3 id="config-comandos-h" class="prose-h3">Comandos customizados</h3>
+            <p class="prose-p">
+              O bloco <span class="ce">command</span> define templates reutilizáveis acionados por
+              <span class="ce">/nome</span>. Um comando pode amarrar um agente, sobrescrever o modelo e
+              usar argumentos e injeção de saída de shell no template.
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="square-slash" class="ic h-3.5 w-3.5"></i> command</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "review": {
+      "description": "Revisa as mudanças recentes",
+      "agent": "reviewer",
+      "template": "Revise o diff a seguir e aponte riscos:\n\n!`git diff HEAD~1`"
+    },
+    "component": {
+      "description": "Cria um componente React",
+      "template": "Crie um componente React chamado $1 em $2 com TypeScript, Tailwind e testes."
+    }
+  }
+}</code></pre>
+            </figure>
+            <p class="prose-p">
+              Comandos também podem viver como arquivos Markdown em
+              <span class="ce">.opencode/command/&lt;nome&gt;.md</span>, com frontmatter YAML.
+              Use <span class="ce">$ARGUMENTS</span>/<span class="ce">$1</span> para argumentos,
+              <span class="ce">!`comando`</span> para injetar saída de shell e
+              <span class="ce">@arquivo</span> para referenciar arquivos.
+            </p>
+          </section>
+
+          <!-- ── Formatter & LSP ── -->
+          <section id="config-formatter" aria-labelledby="config-formatter-h">
+            <h3 id="config-formatter-h" class="prose-h3">Formatter &amp; LSP</h3>
+            <p class="prose-p">
+              <span class="ce">formatter</span> e <span class="ce">lsp</span> aceitam
+              <code class="ce">boolean</code> (liga/desliga o auto-detectado) ou um objeto com servidores
+              customizados por linguagem.
+            </p>
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="braces" class="ic h-3.5 w-3.5"></i> formatter + lsp</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "formatter": {
+    "prettier": {
+      "command": ["npx", "prettier", "--write", "$FILE"],
+      "extensions": [".ts", ".tsx", ".json", ".css"]
+    }
+  },
+  "lsp": {
+    "typescript": {
+      "command": ["typescript-language-server", "--stdio"],
+      "extensions": [".ts", ".tsx"]
+    },
+    "eslint": { "disabled": true }
+  }
+}</code></pre>
+            </figure>
+          </section>
+
+          <!-- ── Demais opções ── -->
+          <section id="config-outras" aria-labelledby="config-outras-h">
+            <h3 id="config-outras-h" class="prose-h3">Demais opções</h3>
+            <p class="prose-p">
+              Opções de compartilhamento, atualização, instruções extras, aparência e ajuste fino do
+              runtime:
+            </p>
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="sliders-horizontal" class="ic h-3.5 w-3.5"></i> opencode.json</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "opencode",
+  "share": "manual",
+  "autoupdate": "notify",
+  "snapshot": true,
+  "logLevel": "INFO",
+  "shell": "/bin/zsh",
+  "instructions": ["AGENTS.md", "docs/conventions/*.md"],
+  "keybinds": { "session_new": "ctrl+n", "app_exit": "ctrl+c ctrl+c" },
+  "tool_output": { "max_lines": 2000, "max_bytes": 51200 },
+  "compaction": { "auto": true, "prune": true, "tail_turns": 2 },
+  "experimental": { "batch_tool": true }
+}</code></pre>
+            </figure>
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead><tr><th scope="col">Campo</th><th scope="col">Tipo</th><th scope="col">Descrição</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="ce">theme</code></td><td><code class="ce">string</code></td><td>Tema visual da TUI.</td></tr>
+                  <tr><td><code class="ce">share</code></td><td><code class="ce">"manual" | "auto" | "disabled"</code></td><td>Comportamento de compartilhamento de sessões.</td></tr>
+                  <tr><td><code class="ce">autoupdate</code></td><td><code class="ce">boolean | "notify"</code></td><td>Atualização automática.</td></tr>
+                  <tr><td><code class="ce">snapshot</code></td><td><code class="ce">boolean</code></td><td>Rastreamento de snapshots do FS. Padrão <code class="ce">true</code>.</td></tr>
+                  <tr><td><code class="ce">logLevel</code></td><td><code class="ce">DEBUG|INFO|WARN|ERROR</code></td><td>Verbosidade de log.</td></tr>
+                  <tr><td><code class="ce">instructions</code></td><td><code class="ce">string[]</code></td><td>Arquivos/padrões de instruções extras carregados no contexto.</td></tr>
+                  <tr><td><code class="ce">keybinds</code></td><td><code class="ce">object</code></td><td>Mapeamento ação → tecla.</td></tr>
+                  <tr><td><code class="ce">tool_output</code></td><td><code class="ce">object</code></td><td><code class="ce">max_lines</code> (2000), <code class="ce">max_bytes</code> (51200) — truncamento.</td></tr>
+                  <tr><td><code class="ce">compaction</code></td><td><code class="ce">object</code></td><td>Compactação automática de contexto.</td></tr>
+                  <tr><td><code class="ce">experimental</code></td><td><code class="ce">object</code></td><td>Flags experimentais (<code class="ce">batch_tool</code>, <code class="ce">openTelemetry</code>…).</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ── Referência completa ── -->
+          <section id="config-referencia" aria-labelledby="config-referencia-h">
+            <h3 id="config-referencia-h" class="prose-h3">Referência completa do schema</h3>
+            <p class="prose-p">Todas as propriedades de topo de <span class="ce">opencode.json</span>:</p>
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead><tr><th scope="col">Propriedade</th><th scope="col">Tipo</th><th scope="col">Descrição</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="ce">$schema</code></td><td><code class="ce">string</code></td><td>URL do JSON Schema para validação.</td></tr>
+                  <tr><td><code class="ce">model</code></td><td><code class="ce">string</code></td><td>Modelo padrão (<code class="ce">provider/model</code>).</td></tr>
+                  <tr><td><code class="ce">small_model</code></td><td><code class="ce">string</code></td><td>Modelo leve para tarefas auxiliares.</td></tr>
+                  <tr><td><code class="ce">default_agent</code></td><td><code class="ce">string</code></td><td>Agente usado sem menção explícita.</td></tr>
+                  <tr><td><code class="ce">username</code></td><td><code class="ce">string</code></td><td>Nome de usuário exibido nas conversas.</td></tr>
+                  <tr><td><code class="ce">agent</code></td><td><code class="ce">object</code></td><td>Configurações de agentes nomeados.</td></tr>
+                  <tr><td><code class="ce">provider</code></td><td><code class="ce">object</code></td><td>Provedores e overrides de modelo.</td></tr>
+                  <tr><td><code class="ce">permission</code></td><td><code class="ce">object</code></td><td>Regras globais de permissão.</td></tr>
+                  <tr><td><code class="ce">mcp</code></td><td><code class="ce">object</code></td><td>Servidores MCP (local/remote).</td></tr>
+                  <tr><td><code class="ce">command</code></td><td><code class="ce">object</code></td><td>Templates de comandos customizados.</td></tr>
+                  <tr><td><code class="ce">plugin</code></td><td><code class="ce">array</code></td><td>Plugins (string ou tupla <code class="ce">[nome, config]</code>).</td></tr>
+                  <tr><td><code class="ce">skills</code></td><td><code class="ce">object</code></td><td>Caminhos/URLs de skills adicionais.</td></tr>
+                  <tr><td><code class="ce">reference</code></td><td><code class="ce">object</code></td><td>Referências nomeadas (<code class="ce">@alias</code>) git/dir.</td></tr>
+                  <tr><td><code class="ce">formatter</code></td><td><code class="ce">boolean | object</code></td><td>Formatação de código.</td></tr>
+                  <tr><td><code class="ce">lsp</code></td><td><code class="ce">boolean | object</code></td><td>Servidores LSP.</td></tr>
+                  <tr><td><code class="ce">instructions</code></td><td><code class="ce">array</code></td><td>Arquivos de instrução extras.</td></tr>
+                  <tr><td><code class="ce">keybinds</code></td><td><code class="ce">object</code></td><td>Atalhos de teclado.</td></tr>
+                  <tr><td><code class="ce">theme</code></td><td><code class="ce">string</code></td><td>Tema da interface.</td></tr>
+                  <tr><td><code class="ce">share</code></td><td><code class="ce">enum</code></td><td><code class="ce">manual | auto | disabled</code>.</td></tr>
+                  <tr><td><code class="ce">autoupdate</code></td><td><code class="ce">boolean | "notify"</code></td><td>Atualização automática.</td></tr>
+                  <tr><td><code class="ce">snapshot</code></td><td><code class="ce">boolean</code></td><td>Snapshots do filesystem.</td></tr>
+                  <tr><td><code class="ce">server</code></td><td><code class="ce">object</code></td><td><code class="ce">port</code>, <code class="ce">hostname</code>, <code class="ce">mdns</code>, <code class="ce">cors</code>.</td></tr>
+                  <tr><td><code class="ce">watcher</code></td><td><code class="ce">object</code></td><td>Observação de arquivos e ignore patterns.</td></tr>
+                  <tr><td><code class="ce">attachment</code></td><td><code class="ce">object</code></td><td>Limites de imagem (resize, tamanho).</td></tr>
+                  <tr><td><code class="ce">tool_output</code></td><td><code class="ce">object</code></td><td>Limiares de truncamento de saída.</td></tr>
+                  <tr><td><code class="ce">compaction</code></td><td><code class="ce">object</code></td><td>Compactação de contexto.</td></tr>
+                  <tr><td><code class="ce">experimental</code></td><td><code class="ce">object</code></td><td>Flags experimentais.</td></tr>
+                  <tr><td><code class="ce">logLevel</code></td><td><code class="ce">enum</code></td><td><code class="ce">DEBUG | INFO | WARN | ERROR</code>.</td></tr>
+                  <tr><td><code class="ce">shell</code></td><td><code class="ce">string</code></td><td>Shell padrão para a tool bash.</td></tr>
+                </tbody >
+              </table>
+            </div>
+          </section>
+
+          <!-- ════════════════ AGENTES CUSTOMIZADOS ════════════════ -->
+          <section id="agentes-custom" aria-labelledby="agentes-custom-h">
+            <h2 id="agentes-custom-h" class="prose-h2">Agentes Customizados</h2>
+            <p class="prose-p">
+              Além de declarar agentes no JSON, você pode defini-los como arquivos Markdown — a forma
+              recomendada, pois mantém o system prompt junto da configuração. Coloque-os em
+              <span class="ce">.opencode/agent/&lt;nome&gt;.md</span> (projeto) ou
+              <span class="ce">~/.config/opencode/agent/</span> (global). O frontmatter YAML carrega os
+              campos do schema; o corpo é o system prompt.
+            </p>
+
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="file-text" class="ic h-3.5 w-3.5"></i> .opencode/agent/reviewer.md</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-markdown">---
+description: Especialista em revisão de código para qualidade e segurança
+mode: subagent
+model: anthropic/claude-sonnet-4-20250514
+temperature: 0.3
+permission:
+  read: allow
+  grep: allow
+  glob: allow
+  edit: deny
+  bash: deny
+---
+
+Você é um especialista em revisão de código focado em:
+
+1. Qualidade e boas práticas
+2. Vulnerabilidades de segurança (referencie o OWASP Top 10)
+3. Problemas de performance
+4. Manutenibilidade
+
+Ao revisar:
+- Classifique os achados por severidade (CRÍTICO, MAIOR, MENOR)
+- Forneça referências de linha específicas
+- Sugira melhorias concretas alinhadas aos padrões do projeto</code></pre>
+            </figure>
+
+            <div class="callout callout-info">
+              <i data-lucide="at-sign" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Acionando o agente</span></p>
+                <p>
+                  Com <span class="ce">mode: subagent</span>, o agente é registrado como
+                  <span class="ce">@reviewer</span> e pode ser invocado por menção, pela tool
+                  <span class="ce">task</span> ou por um comando que o referencie. Use
+                  <span class="ce">opencode agent create</span> para um assistente interativo de
+                  criação, e <span class="ce">opencode agent list</span> para verificar o registro.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════════════════ TOOLS NATIVAS ════════════════ -->
+          <section id="tools" aria-labelledby="tools-h">
+            <h2 id="tools-h" class="prose-h2">Tools Nativas</h2>
+            <p class="prose-p">
+              As tools embutidas que o agente pode chamar durante o loop. A coluna de permissão indica
+              o comportamento padrão.
+            </p>
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead><tr><th scope="col">Tool</th><th scope="col">Descrição</th><th scope="col">Permissão</th></tr></thead>
+                <tbody>
+                  <tr><td><code class="ce">read</code></td><td>Lê o conteúdo de arquivos.</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">write</code></td><td>Cria ou sobrescreve arquivos.</td><td><span class="pill pill-yellow">edit</span></td></tr>
+                  <tr><td><code class="ce">edit</code></td><td>Edita via substituição exata de string.</td><td><span class="pill pill-yellow">edit</span></td></tr>
+                  <tr><td><code class="ce">patch</code></td><td>Aplica patches ao código.</td><td><span class="pill pill-yellow">edit</span></td></tr>
+                  <tr><td><code class="ce">grep</code></td><td>Busca conteúdo por regex.</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">glob</code></td><td>Encontra arquivos por padrão (<code class="ce">**/*.ts</code>).</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">list</code></td><td>Lista arquivos e diretórios.</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">bash</code></td><td>Executa comandos de shell.</td><td><span class="pill pill-yellow">ask</span></td></tr>
+                  <tr><td><code class="ce">webfetch</code></td><td>Busca e lê páginas web.</td><td><span class="pill pill-yellow">ask</span></td></tr>
+                  <tr><td><code class="ce">lsp</code></td><td>Language Server Protocol (experimental).</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">skill</code></td><td>Carrega o conteúdo de um SKILL.md.</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">task</code></td><td>Delega para um subagent.</td><td><span class="pill pill-green">allow</span></td></tr>
+                  <tr><td><code class="ce">todoread / todowrite</code></td><td>Rastreamento de tarefas na sessão.</td><td><span class="pill pill-green">allow</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ════════════════ TUTORIAL: PLUGINS ════════════════ -->
+          <section id="tutorial-plugins" aria-labelledby="tutorial-plugins-h">
+            <h2 id="tutorial-plugins-h" class="prose-h2">Tutorial · Criando um Plugin</h2>
+            <p class="prose-p">
+              Um plugin é um módulo JavaScript/TypeScript que exporta uma ou mais funções de plugin.
+              Cada função recebe um objeto de contexto e retorna um objeto de <em>hooks</em>. Plugins
+              são descobertos e carregados automaticamente — sem registro explícito.
+            </p>
+
+            <div class="callout callout-info">
+              <i data-lucide="brain" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>O modelo mental que a doc oficial não te dá</span></p>
+                <p>
+                  Um plugin não é uma "configuração" — é
+                  <strong>código JS/TS carregado dentro de um processo servidor de longa duração</strong>
+                  que o OpenCode mantém rodando por baixo dos panos. E o diretório
+                  <span class="ce">.opencode/</span> não é mágico: ele é um
+                  <strong>projeto Node/Bun já inicializado</strong> (tem <span class="ce">package.json</span>
+                  e <span class="ce">node_modules</span>). Tudo o que roda lá dentro herda essa resolução
+                  de módulos.
+                </p>
+                <p>
+                  Desse único fato cai todo o resto: por que <span class="ce">.ts</span>/<span class="ce">.js</span>
+                  "simplesmente roda", por que dependências externas exigem um <span class="ce">package.json</span>,
+                  por que um plugin <em>fora</em> de <span class="ce">.opencode/</span> precisa replicar esse
+                  contexto, e por que você reinicia o OpenCode para recarregar um plugin. Segure essa ideia
+                  enquanto lê os passos abaixo.
+                </p>
+              </div>
+            </div>
+
+            <ol class="my-6 space-y-4">
+              <li class="step">
+                <span class="step-num">1</span>
+                <p class="step-title">Crie o arquivo do plugin</p>
+                <p class="text-sm text-fg-muted">
+                  Plugins de projeto ficam em <span class="ce">.opencode/plugin/</span>; globais em
+                  <span class="ce">~/.config/opencode/plugin/</span> (carregados na inicialização). Na
+                  verdade, um plugin pode <strong>morar em qualquer lugar</strong> — basta apontar o
+                  caminho correto. A vantagem de ficar dentro de <span class="ce">.opencode/</span> é
+                  herdar de graça o <span class="ce">node_modules</span> e o
+                  <span class="ce">package.json</span> que já existem ali.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="folder-tree" class="ic h-3.5 w-3.5"></i> estrutura</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-bash">meu-projeto/
+├── opencode.json
+└── .opencode/
+    ├── plugin/
+    │   └── notify.ts        # &larr; seu plugin
+    └── package.json         # dependências npm opcionais</code></pre>
+                </figure>
+              </li>
+
+              <li class="step">
+                <span class="step-num">2</span>
+                <p class="step-title">Exporte a função de plugin</p>
+                <p class="text-sm text-fg-muted">
+                  Importe o tipo <span class="ce">Plugin</span> de <span class="ce">@opencode-ai/plugin</span>.
+                  A função <code class="ce">async</code> recebe o contexto e retorna os hooks.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> .opencode/plugin/notify.ts</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-typescript">import type { Plugin } from "@opencode-ai/plugin"
+
+export const NotifyPlugin: Plugin = async ({ project, client, $, directory, worktree }) =&gt; {
+  // Executa uma vez no carregamento do plugin.
+  console.log(`[notify] plugin ativo em ${directory}`)
+
+  return {
+    // hooks aqui ↓
+  }
+}</code></pre>
+                </figure>
+                <div class="spec-wrap">
+                  <table class="spec">
+                    <thead><tr><th scope="col">Contexto</th><th scope="col">O que é</th></tr></thead>
+                    <tbody>
+                      <tr><td><code class="ce">project</code></td><td>Informações do projeto atual.</td></tr>
+                      <tr><td><code class="ce">client</code></td><td>Cliente do SDK do OpenCode (interação com a IA).</td></tr>
+                      <tr><td><code class="ce">$</code></td><td>Shell API do Bun para executar comandos.</td></tr>
+                      <tr><td><code class="ce">directory</code></td><td>Diretório de trabalho atual.</td></tr>
+                      <tr><td><code class="ce">worktree</code></td><td>Caminho do worktree Git.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </li>
+
+              <li class="step">
+                <span class="step-num">3</span>
+                <p class="step-title">Implemente os hooks</p>
+                <p class="text-sm text-fg-muted">
+                  O hook <span class="ce">tool.execute.before</span> recebe
+                  <span class="ce">(input, output)</span> e pode <strong>mutar</strong> os argumentos
+                  da tool antes da execução. O <span class="ce">tool.execute.after</span> roda depois,
+                  com acesso ao resultado.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> notify.ts (com hooks)</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-typescript">import type { Plugin } from "@opencode-ai/plugin"
+
+export const NotifyPlugin: Plugin = async ({ $ }) =&gt; {
+  return {
+    // Antes de executar qualquer tool — pode mutar output.args
+    "tool.execute.before": async (input, output) =&gt; {
+      if (input.tool === "bash") {
+        output.args.command = `echo "[notify] rodando…" &amp;&amp; ${output.args.command}`
+      }
+    },
+
+    // Depois da execução — bom para logging/telemetria
+    "tool.execute.after": async (input, output) =&gt; {
+      console.log(`[notify] tool "${input.tool}" concluída`)
+    },
+
+    // Injeta variáveis de ambiente no shell
+    "shell.env": async (input, output) =&gt; {
+      output.env.PROJECT_ROOT = input.cwd
+    },
+
+    // Notificação de desktop quando a sessão fica ociosa
+    "session.idle": async ({ sessionID }) =&gt; {
+      await $`notify-send "OpenCode" "Sessão ${sessionID} aguardando você"`
+    },
+  }
+}</code></pre>
+                </figure>
+              </li>
+
+              <li class="step">
+                <span class="step-num">4</span>
+                <p class="step-title">(Opcional) Dependências npm</p>
+                <p class="text-sm text-fg-muted">
+                  O <span class="ce">package.json</span> aqui <strong>não serve para "ser plugin"</strong> —
+                  serve para <strong>resolução de dependência</strong>. Sem nenhuma lib externa, você não
+                  precisa de <span class="ce">package.json</span> algum: solte o <span class="ce">.ts</span>
+                  e pronto. Com lib externa, adicione um <span class="ce">package.json</span> em
+                  <span class="ce">.opencode/</span> e o OpenCode roda <span class="ce">bun install</span>
+                  no boot.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="package" class="ic h-3.5 w-3.5"></i> .opencode/package.json</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-json">{
+  "dependencies": {
+    "shescape": "^2.1.0"
+  }
+}</code></pre>
+                </figure>
+                <div class="callout callout-warn">
+                  <i data-lucide="folder-cog" class="ci"></i>
+                  <div>
+                    <p class="callout-title"><span>Por que fora do .opencode/ quebra</span></p>
+                    <p>
+                      Como <span class="ce">.opencode/</span> já tem <span class="ce">node_modules</span> e
+                      <span class="ce">package.json</span>, o <span class="ce">import</span> resolve sozinho.
+                      Se o plugin viver <em>fora</em> dali, você precisa <strong>replicar esse contexto</strong>
+                      — rodar <span class="ce">npm init</span> / <span class="ce">bun install</span> na pasta
+                      dele. Apagar o <span class="ce">node_modules</span> quebra o plugin pelo mesmo motivo que
+                      rodar <span class="ce">node</span> sem instalar as deps, ou Python sem as libs: não há o
+                      que importar.
+                    </p>
+                  </div>
+                </div>
+              </li>
+
+              <li class="step">
+                <span class="step-num">5</span>
+                <p class="step-title">Instale plugins publicados (npm)</p>
+                <p class="text-sm text-fg-muted">
+                  Para plugins distribuídos via npm, liste-os no array <span class="ce">plugin</span>.
+                  São instalados automaticamente via Bun e cacheados em
+                  <span class="ce">~/.cache/opencode/node_modules/</span>.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-json" class="ic h-3.5 w-3.5"></i> opencode.json</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-json">{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "opencode-helicone-session",
+    ["@my-org/custom-plugin", { "level": "verbose" }]
+  ]
+}</code></pre>
+                </figure>
+              </li>
+            </ol>
+
+            <div class="callout callout-note">
+              <i data-lucide="git-fork" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>before vs. after</span></p>
+                <p>
+                  Use <span class="ce">tool.execute.before</span> para <em>validar ou transformar</em>
+                  argumentos (ex.: escapar comandos perigosos, injetar flags). Use
+                  <span class="ce">tool.execute.after</span> para <em>observar</em> — logging, métricas,
+                  notificações — sem alterar o fluxo.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout callout-info">
+              <i data-lucide="server-cog" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Por que você reinicia o OpenCode para recarregar</span></p>
+                <p>
+                  O runtime roda um <strong>processo servidor de longa duração</strong> por baixo dos panos
+                  — ele aparece na lista de processos do seu sistema. Plugins são carregados
+                  <strong>uma vez, no boot</strong>. Por isso, ao modificar um plugin, você precisa
+                  <strong>sair e entrar de novo</strong> no OpenCode: o servidor encerra a conexão e só
+                  recarrega tudo na próxima inicialização.
+                </p>
+              </div>
+            </div>
+
+            <div class="callout callout-note">
+              <i data-lucide="list-ordered" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>console.log no topo e a ordem de execução</span></p>
+                <p>
+                  O corpo da função do plugin <strong>é código de boot</strong> — JavaScript comum, sem
+                  mágica. Um <span class="ce">console.log</span> no topo aparece cedo porque é
+                  <strong>síncrono</strong>: pelo <strong>event loop</strong>, a <em>call stack</em>
+                  síncrona esvazia por completo antes de qualquer callback assíncrono (promises/microtasks,
+                  depois timers/macrotasks) ter a vez. Como a maior parte do runtime é assíncrona, o log
+                  síncrono roda antes de quase tudo.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Catálogo de Hooks ── -->
+          <section id="hooks" aria-labelledby="hooks-h">
+            <h3 id="hooks-h" class="prose-h3">Catálogo de Hooks</h3>
+            <p class="prose-p">
+              Os hooks disponíveis, agrupados por categoria. Os de <strong>interceptação</strong>
+              (tool/shell/custom tool) recebem <span class="ce">(input, output)</span> e podem
+              influenciar a execução; os demais são <strong>eventos</strong> de ciclo de vida que você
+              observa.
+            </p>
+            <div class="spec-wrap">
+              <table class="spec">
+                <thead><tr><th scope="col">Categoria</th><th scope="col">Hooks</th></tr></thead>
+                <tbody>
+                  <tr><td>Config</td><td><code class="ce">config</code> (muta o config do runtime — ver <a class="prose-a" href="#config-carregamento">Carregamento &amp; Precedência</a>)</td></tr>
+                  <tr><td>Tool</td><td><code class="ce">tool.execute.before</code> · <code class="ce">tool.execute.after</code> · <code class="ce">tool</code> (registro de custom tools)</td></tr>
+                  <tr><td>Shell</td><td><code class="ce">shell.env</code></td></tr>
+                  <tr><td>Sessão</td><td><code class="ce">session.created</code> · <code class="ce">session.updated</code> · <code class="ce">session.idle</code> · <code class="ce">session.compacted</code> · <code class="ce">session.deleted</code> · <code class="ce">session.diff</code> · <code class="ce">session.error</code> · <code class="ce">session.status</code></td></tr>
+                  <tr><td>Mensagem</td><td><code class="ce">message.updated</code> · <code class="ce">message.removed</code> · <code class="ce">message.part.updated</code> · <code class="ce">message.part.removed</code></td></tr>
+                  <tr><td>Permissão</td><td><code class="ce">permission.asked</code> · <code class="ce">permission.replied</code></td></tr>
+                  <tr><td>Arquivo</td><td><code class="ce">file.edited</code> · <code class="ce">file.watcher.updated</code></td></tr>
+                  <tr><td>LSP</td><td><code class="ce">lsp.client.diagnostics</code> · <code class="ce">lsp.updated</code></td></tr>
+                  <tr><td>Comando</td><td><code class="ce">command.executed</code></td></tr>
+                  <tr><td>Todo</td><td><code class="ce">todo.updated</code></td></tr>
+                  <tr><td>Servidor</td><td><code class="ce">server.connected</code> · <code class="ce">installation.updated</code></td></tr>
+                  <tr><td>TUI</td><td><code class="ce">tui.prompt.append</code> · <code class="ce">tui.command.execute</code> · <code class="ce">tui.toast.show</code></td></tr>
+                  <tr><td>Experimental</td><td><code class="ce">experimental.session.compacting</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- ════════════════ TUTORIAL: CUSTOM TOOLS ════════════════ -->
+          <section id="tutorial-tools" aria-labelledby="tutorial-tools-h">
+            <h2 id="tutorial-tools-h" class="prose-h2">Tutorial · Criando uma Custom Tool</h2>
+            <p class="prose-p">
+              Custom tools dão ao agente capacidades sob medida (consultar um banco, chamar uma API
+              interna, rodar um script). Elas são definidas em TypeScript/JavaScript e ficam
+              disponíveis ao LLM automaticamente.
+            </p>
+
+            <ol class="my-6 space-y-4">
+              <li class="step">
+                <span class="step-num">1</span>
+                <p class="step-title">Crie o arquivo — o nome vira o nome da tool</p>
+                <p class="text-sm text-fg-muted">
+                  Coloque tools em <span class="ce">.opencode/tool/</span> (projeto) ou
+                  <span class="ce">~/.config/opencode/tool/</span> (global). O nome do arquivo define o
+                  nome da tool: <span class="ce">database.ts</span> → tool <span class="ce">database</span>.
+                  Múltiplos exports usam o padrão <span class="ce">&lt;arquivo&gt;_&lt;export&gt;</span> —
+                  exportar <span class="ce">add</span> de <span class="ce">math.ts</span> cria
+                  <span class="ce">math_add</span>.
+                </p>
+              </li>
+
+              <li class="step">
+                <span class="step-num">2</span>
+                <p class="step-title">Defina a tool com o helper <code class="ce">tool()</code></p>
+                <p class="text-sm text-fg-muted">
+                  Importe <span class="ce">tool</span> de <span class="ce">@opencode-ai/plugin</span>.
+                  Forneça <span class="ce">description</span>, <span class="ce">args</span> (validados via
+                  <span class="ce">tool.schema</span>, que é Zod) e <span class="ce">execute</span>.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> .opencode/tool/database.ts</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-typescript">import { tool } from "@opencode-ai/plugin"
+
+export default tool({
+  description: "Executa uma consulta SQL somente-leitura no banco do projeto",
+  args: {
+    query: tool.schema.string().describe("A instrução SQL SELECT a executar"),
+    limit: tool.schema.number().describe("Máximo de linhas a retornar").default(50),
+  },
+  async execute(args, context) {
+    const { sessionID, agent, directory, worktree } = context
+    const rows = await runReadOnlyQuery(args.query, args.limit)
+    return JSON.stringify(rows, null, 2)
+  },
+})</code></pre>
+                </figure>
+              </li>
+
+              <li class="step">
+                <span class="step-num">3</span>
+                <p class="step-title">Use o contexto de execução</p>
+                <p class="text-sm text-fg-muted">
+                  O segundo argumento de <span class="ce">execute</span> traz metadados úteis da
+                  sessão: <span class="ce">agent</span>, <span class="ce">sessionID</span>,
+                  <span class="ce">messageID</span>, <span class="ce">directory</span> e
+                  <span class="ce">worktree</span>.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> .opencode/tool/math.ts</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-typescript">import { tool } from "@opencode-ai/plugin"
+import path from "path"
+
+// Cria a tool "math_add" (export nomeado em math.ts)
+export const add = tool({
+  description: "Soma dois números via um script Python",
+  args: {
+    a: tool.schema.number().describe("Primeiro número"),
+    b: tool.schema.number().describe("Segundo número"),
+  },
+  async execute(args, context) {
+    const script = path.join(context.worktree, ".opencode/tool/add.py")
+    const result = await Bun.$`python3 ${script} ${args.a} ${args.b}`.text()
+    return result.trim()
+  },
+})</code></pre>
+                </figure>
+              </li>
+
+              <li class="step">
+                <span class="step-num">4</span>
+                <p class="step-title">Como alternativa, registre via plugin</p>
+                <p class="text-sm text-fg-muted">
+                  Plugins também podem expor tools pelo hook <span class="ce">tool</span>, útil quando a
+                  tool compartilha estado com outros hooks do mesmo plugin.
+                </p>
+                <figure class="code-block">
+                  <figcaption class="code-head">
+                    <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> .opencode/plugin/tools.ts</span>
+                    <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+                  </figcaption>
+                  <pre><code class="language-typescript">import { type Plugin, tool } from "@opencode-ai/plugin"
+
+export const CustomToolsPlugin: Plugin = async (ctx) =&gt; {
+  return {
+    tool: {
+      greet: tool({
+        description: "Cumprimenta alguém pelo nome",
+        args: { name: tool.schema.string() },
+        async execute(args) {
+          return `Olá, ${args.name}!`
+        },
+      }),
+    },
+  }
+}</code></pre>
+                </figure>
+              </li>
+            </ol>
+
+            <div class="callout callout-ok">
+              <i data-lucide="wand-sparkles" class="ci"></i>
+              <div>
+                <p class="callout-title"><span>Disponibilidade automática</span></p>
+                <p>
+                  Uma vez no diretório de tools, a custom tool fica disponível ao LLM durante as
+                  conversas — sem registro manual. Descrições claras em
+                  <span class="ce">description</span> e nos <span class="ce">.describe()</span> dos
+                  argumentos são o que ensina o modelo a usá-la corretamente. Custom tools com o mesmo
+                  nome de uma tool nativa a sobrescrevem.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ════════════════ CLI ════════════════ -->
+          <section id="cli" aria-labelledby="cli-h">
+            <h2 id="cli-h" class="prose-h2">Referência de CLI</h2>
+            <p class="prose-p">Comandos essenciais do binário <span class="ce">opencode</span>:</p>
+            <figure class="code-block">
+              <figcaption class="code-head">
+                <span class="code-lang"><i data-lucide="terminal" class="ic h-3.5 w-3.5"></i> bash</span>
+                <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+              </figcaption>
+              <pre><code class="language-bash"># TUI interativa
+opencode                       # inicia no diretório atual
+opencode /caminho/projeto      # inicia em um projeto
+opencode --continue            # continua a última sessão
+opencode --model anthropic/claude-sonnet-4-20250514
+
+# Modo não-interativo
+opencode run "explique este codebase"
+opencode run --file src/main.ts "adicione tratamento de erro"
+opencode run --command review
+opencode run --format json "liste todas as funções"
+
+# Servidor / web
+opencode serve --port 8080     # servidor headless
+opencode web --port 8080       # interface web
+opencode attach http://localhost:8080
+
+# Agentes, MCP e sessões
+opencode agent create
+opencode agent list
+opencode mcp add &lt;servidor&gt;
+opencode session list --max-count 10
+opencode export &lt;session-id&gt;</code></pre>
+            </figure>
+          </section>
+
+          <!-- ════════════════ GLOSSÁRIO ════════════════ -->
+          <section id="glossario" aria-labelledby="glossario-h">
+            <h2 id="glossario-h" class="prose-h2">Glossário</h2>
+            <dl class="mt-4 divide-y divide-ink-700">
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Agent Loop</dt>
+                <dd class="text-sm text-fg-muted">Ciclo iterativo onde o LLM pensa, decide chamar uma tool ou responder, e repete até a resposta final ou o limite de <code class="ce">steps</code>.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Agente</dt>
+                <dd class="text-sm text-fg-muted">Configuração de comportamento (modelo, prompt, tools, permissões). Pode ser <code class="ce">primary</code> ou <code class="ce">subagent</code>.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Tool Calling</dt>
+                <dd class="text-sm text-fg-muted">Mecanismo pelo qual o modelo solicita a execução de uma ferramenta e aguarda o resultado para continuar.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Hook</dt>
+                <dd class="text-sm text-fg-muted">Ponto de extensão de plugin que intercepta (before/after) ou observa eventos do ciclo de vida do runtime.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">MCP</dt>
+                <dd class="text-sm text-fg-muted">Model Context Protocol — padrão para conectar servidores externos (locais ou remotos) que expõem tools e recursos ao agente.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Permission</dt>
+                <dd class="text-sm text-fg-muted">Política que define se uma tool roda automaticamente (<code class="ce">allow</code>), pede confirmação (<code class="ce">ask</code>) ou é bloqueada (<code class="ce">deny</code>).</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Schema</dt>
+                <dd class="text-sm text-fg-muted">Contrato JSON Schema em <code class="ce">opencode.ai/config.json</code> que valida a configuração e habilita autocompletar.</dd>
+              </div>
+              <div class="grid gap-1 py-3 sm:grid-cols-[160px_1fr] sm:gap-4">
+                <dt class="font-semibold text-brand">Custom Tool</dt>
+                <dd class="text-sm text-fg-muted">Ferramenta definida pelo usuário em <code class="ce">.opencode/tool/</code>, exposta ao LLM via o helper <code class="ce">tool()</code>.</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- ════════════════ FOOTER ════════════════ -->
+          <footer role="contentinfo" class="mt-16 border-t border-ink-700 pt-8 text-sm text-fg-dim">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <p>
+                Hub de documentação do <strong class="text-fg-muted">OpenCode</strong> — conteúdo
+                derivado do schema <a class="prose-a" href="https://opencode.ai/config.json">opencode.ai/config.json</a>
+                e da documentação oficial.
+              </p>
+              <div class="flex items-center gap-4">
+                <a class="prose-a inline-flex items-center gap-1.5" href="https://opencode.ai/docs/"><i data-lucide="book-open" class="ic h-4 w-4"></i> Docs</a>
+                <a class="prose-a inline-flex items-center gap-1.5" href="https://github.com/opencode-ai/opencode"><i data-lucide="github" class="ic h-4 w-4"></i> GitHub</a>
+              </div>
+            </div>
+          </footer>
+        </div>
+      </main>
+    </div>
+
+    <!-- ════════════════ SCRIPTS ════════════════ -->
+
+    <!-- Prism core + autoloader (carrega gramáticas sob demanda) -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+    <script>
+      // ── Ícones Lucide ──────────────────────────────────────────────
+      lucide.createIcons();
+      // Ícones decorativos não carregam informação — esconde do AT
+      document.querySelectorAll('.ci svg, .ic svg, .card-icon svg').forEach(function (svg) {
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+      });
+
+      // ── Copiar código ──────────────────────────────────────────────
+      document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var code = btn.closest('.code-block').querySelector('pre code');
+          var text = code.textContent;
+          var done = function () {
+            btn.classList.add('copied');
+            btn.innerHTML =
+              '<i data-lucide="check" class="ic h-3.5 w-3.5"></i> Copiado';
+            lucide.createIcons({ nameAttr: 'data-lucide' });
+            setTimeout(function () {
+              btn.classList.remove('copied');
+              btn.innerHTML = '<i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar';
+              lucide.createIcons({ nameAttr: 'data-lucide' });
+            }, 2000);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done);
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            done();
+          }
+        });
+      });
+
+      // ── Menu lateral (mobile) ──────────────────────────────────────
+      (function () {
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('navOverlay');
+        var toggle = document.getElementById('navToggle');
+        var open = function () {
+          sidebar.classList.remove('-translate-x-full');
+          overlay.classList.remove('hidden');
+          overlay.removeAttribute('aria-hidden');
+          toggle && toggle.setAttribute('aria-expanded', 'true');
+          // Foco no primeiro link da sidebar ao abrir
+          var firstLink = sidebar.querySelector('a');
+          if (firstLink) firstLink.focus();
+        };
+        var close = function () {
+          sidebar.classList.add('-translate-x-full');
+          overlay.classList.add('hidden');
+          overlay.setAttribute('aria-hidden', 'true');
+          toggle && toggle.setAttribute('aria-expanded', 'false');
+        };
+        document.getElementById('navToggle').addEventListener('click', open);
+        document.getElementById('navClose').addEventListener('click', close);
+        overlay.addEventListener('click', close);
+        sidebar.querySelectorAll('a').forEach(function (a) {
+          a.addEventListener('click', function () {
+            if (window.innerWidth < 1024) close();
+          });
+        });
+      })();
+
+      // ── Scroll-spy: destaca a seção ativa na navegação ─────────────
+      (function () {
+        var links = Array.prototype.slice.call(
+          document.querySelectorAll('#sidebar a[href^="#"]')
+        );
+        var map = {};
+        var targets = [];
+        links.forEach(function (l) {
+          var id = l.getAttribute('href').slice(1);
+          var el = document.getElementById(id);
+          if (el) {
+            map[id] = l;
+            targets.push(el);
+          }
+        });
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                links.forEach(function (l) {
+                  l.classList.remove('active');
+                  l.removeAttribute('aria-current');
+                });
+                var active = map[entry.target.id];
+                if (active) {
+                  active.classList.add('active');
+                  active.setAttribute('aria-current', 'location');
+                  // Scroll suave na sidebar somente em desktop (evita salto no mobile)
+                  if (window.innerWidth >= 1024) {
+                    active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                  }
+                }
+              }
+            });
+          },
+          { rootMargin: '-72px 0px -65% 0px', threshold: 0 }
+        );
+        targets.forEach(function (t) {
+          observer.observe(t);
+        });
+      })();
+    </script>
+  </body>
+</html>

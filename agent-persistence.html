@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Como agentes de IA (Claude Code, OpenCode, Codex, Hermes, Pi) persistem sessões no disco — duas filosofias: event log append-only (JSONL) vs document store normalizado. Dados reais inspecionados do disco."
+    />
+    <title>Persistência de Sessão em Agentes de IA</title>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+            colors: {
+              ink: {
+                900: '#0a0d12',
+                850: '#0d1117',
+                800: '#161b22',
+                750: '#1c2336',
+                700: '#21262d',
+                600: '#30363d',
+                500: '#484f58',
+              },
+              fg: { DEFAULT: '#e6edf3', strong: '#f0f6fc', muted: '#8b949e', dim: '#6e7681' },
+              brand: '#58a6ff',
+              ok: '#3fb950',
+              warn: '#d29922',
+              danger: '#f85149',
+              violet: '#bc8cff',
+            },
+          },
+        },
+      };
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer base {
+        html {
+          @apply scroll-smooth;
+          /* header h-16 = 4rem + folga */
+          scroll-padding-top: 4.5rem;
+        }
+        body {
+          @apply bg-ink-850 font-sans text-fg antialiased;
+          line-height: 1.7;
+        }
+        /* Foco visível global — WCAG 2.2 AA (espelho do index.html) */
+        :focus-visible {
+          outline: 2px solid #58a6ff;
+          outline-offset: 3px;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar {
+          width: 9px;
+          height: 9px;
+        }
+        ::-webkit-scrollbar-track {
+          @apply bg-ink-850;
+        }
+        ::-webkit-scrollbar-thumb {
+          @apply rounded-full bg-ink-600;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          @apply bg-ink-500;
+        }
+        ::selection {
+          background: rgba(88, 166, 255, 0.3);
+        }
+      }
+
+      @layer components {
+        /* Skip link (espelho do index.html) */
+        .skip-link {
+          @apply absolute -top-full left-4 z-[100] rounded-b-md bg-brand px-4 py-2 text-sm font-semibold text-ink-900 transition-[top] focus:top-0;
+        }
+
+        .prose-h2 {
+          @apply mb-3 mt-14 scroll-mt-20 border-b border-ink-700 pb-2 text-2xl font-bold tracking-tight text-fg-strong;
+        }
+        .prose-h3 {
+          @apply mb-2 mt-8 scroll-mt-20 text-lg font-semibold text-fg-strong;
+        }
+        .prose-p {
+          @apply my-3 text-[0.95rem] leading-[1.75] text-fg/90;
+        }
+        .prose-a {
+          @apply font-medium text-brand underline-offset-2 hover:underline focus-visible:underline;
+        }
+        .ic {
+          @apply inline-block h-[1.05em] w-[1.05em] align-[-0.18em];
+        }
+        .ce {
+          @apply rounded border border-ink-700 bg-ink-800 px-1.5 py-0.5 font-mono text-[0.82em] text-fg-strong;
+        }
+
+        .code-block {
+          @apply my-5 overflow-hidden rounded-xl border border-ink-600 bg-[#161b22] shadow-lg shadow-black/20;
+        }
+        .code-head {
+          @apply flex items-center justify-between border-b border-ink-600 bg-ink-750 px-4 py-2;
+        }
+        .code-lang {
+          @apply flex items-center gap-1.5 font-mono text-xs font-medium uppercase tracking-wider text-fg-muted;
+        }
+        .copy-btn {
+          @apply inline-flex items-center gap-1.5 rounded-md border border-ink-600 px-2.5 py-1 text-xs font-medium text-fg-muted transition hover:border-ink-500 hover:bg-ink-700 hover:text-fg;
+        }
+        .copy-btn.copied {
+          @apply border-ok/60 bg-ok/10 text-ok;
+        }
+        /* scroll horizontal em telas pequenas */
+        .code-block pre {
+          @apply !m-0 !rounded-none !bg-transparent !p-4 text-[0.82rem] leading-relaxed;
+          overflow-x: auto;
+        }
+        .code-block pre code {
+          @apply font-mono;
+          tab-size: 2;
+          white-space: pre;
+        }
+
+        .callout {
+          @apply my-5 flex gap-3 rounded-lg border-l-4 p-4 text-[0.9rem] text-fg/90;
+        }
+        .callout-title {
+          @apply mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider;
+        }
+        .callout > .ci {
+          @apply mt-0.5 h-5 w-5 flex-shrink-0;
+        }
+        .callout p:last-child {
+          @apply mb-0;
+        }
+        .callout-info {
+          @apply border-brand bg-brand/10;
+        }
+        .callout-info .callout-title,
+        .callout-info .ci {
+          @apply text-brand;
+        }
+        .callout-note {
+          @apply border-violet bg-violet/10;
+        }
+        .callout-note .callout-title,
+        .callout-note .ci {
+          @apply text-violet;
+        }
+        .callout-warn {
+          @apply border-warn bg-warn/10;
+        }
+        .callout-warn .callout-title,
+        .callout-warn .ci {
+          @apply text-warn;
+        }
+        .callout-ok {
+          @apply border-ok bg-ok/10;
+        }
+        .callout-ok .callout-title,
+        .callout-ok .ci {
+          @apply text-ok;
+        }
+
+        .spec-wrap {
+          @apply my-5 overflow-x-auto rounded-xl border border-ink-700;
+          -webkit-overflow-scrolling: touch;
+        }
+        .spec {
+          @apply w-full border-collapse text-left text-[0.875rem];
+          min-width: 480px;
+        }
+        .spec thead th {
+          @apply whitespace-nowrap border-b border-ink-600 bg-ink-800 px-4 py-2.5 font-semibold text-fg-strong;
+        }
+        .spec tbody td {
+          @apply border-b border-ink-700 px-4 py-2.5 align-top text-fg/85;
+        }
+        .spec tbody tr:last-child td {
+          @apply border-b-0;
+        }
+        .spec tbody tr:hover td {
+          @apply bg-ink-800/60;
+        }
+
+        .pill {
+          @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+        }
+        .pill-blue {
+          @apply border-brand/50 bg-brand/10 text-brand;
+        }
+        .pill-green {
+          @apply border-ok/50 bg-ok/10 text-ok;
+        }
+        .pill-red {
+          @apply border-danger/50 bg-danger/10 text-danger;
+        }
+        .pill-yellow {
+          @apply border-warn/50 bg-warn/10 text-warn;
+        }
+        .pill-violet {
+          @apply border-violet/50 bg-violet/10 text-violet;
+        }
+        .pill-gray {
+          @apply border-ink-600 bg-ink-700/50 text-fg-muted;
+        }
+
+        /* Diagrama: stream de eventos (event log) */
+        .stream {
+          @apply space-y-1.5 rounded-xl border border-ink-700 bg-ink-900/60 p-4 font-mono text-xs;
+          overflow-x: auto;
+        }
+        .evt {
+          @apply flex items-center gap-2 rounded border-l-2 bg-ink-800/70 px-3 py-1.5;
+          min-width: 480px;
+        }
+        .evt b {
+          @apply min-w-[150px] font-semibold;
+        }
+        .evt span {
+          @apply truncate text-fg-dim;
+        }
+
+        /* Diagrama: document store (boxes aninhadas) */
+        .docbox {
+          @apply rounded-lg border p-3;
+        }
+        .docbox-label {
+          @apply mb-2 flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Skip link: primeiro elemento focável -->
+    <a href="#conteudo-principal" class="skip-link">Ir para o conteúdo</a>
+
+    <!-- TOP BAR -->
+    <header
+      role="banner"
+      class="sticky top-0 z-40 border-b border-ink-700 bg-ink-850/85 backdrop-blur supports-[backdrop-filter]:bg-ink-850/70"
+    >
+      <div class="mx-auto flex h-16 max-w-3xl items-center gap-3 px-5">
+        <a href="index.html" class="flex items-center gap-2.5" aria-label="Centro de Documentação — voltar ao hub">
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-violet text-ink-900"
+            aria-hidden="true"
+          >
+            <i data-lucide="hard-drive" class="ic h-5 w-5"></i>
+          </span>
+          <span class="text-[1.05rem] font-bold tracking-tight text-fg-strong">Agent Persistence</span>
+        </a>
+        <nav class="ml-auto flex items-center gap-2" aria-label="Navegação do documento">
+          <a
+            href="index.html"
+            class="hidden items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-fg-muted transition hover:text-fg sm:inline-flex"
+            aria-label="Voltar ao Centro de Documentação"
+          >
+            <i data-lucide="library" class="ic h-4 w-4" aria-hidden="true"></i>
+            <span class="hidden sm:inline">Centro de Docs</span>
+          </a>
+          <a
+            href="opencode.html"
+            class="inline-flex items-center gap-1.5 rounded-md border border-ink-600 px-3 py-1.5 text-sm font-medium text-fg transition hover:border-ink-500 hover:bg-ink-800"
+            aria-label="Ir para a documentação técnica do OpenCode"
+          >
+            <i data-lucide="terminal" class="ic h-4 w-4" aria-hidden="true"></i>
+            <span>Doc OpenCode</span>
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="conteudo-principal" tabindex="-1" class="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+      <!-- HERO -->
+      <div class="mb-2 flex flex-wrap items-center gap-2">
+        <span class="pill pill-blue"><i data-lucide="search" class="ic h-3 w-3"></i> Inspeção de disco</span>
+        <span class="pill pill-violet">Arquitetura</span>
+        <span class="pill pill-gray">Dados reais</span>
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-fg-strong sm:text-4xl">
+        Onde os agentes guardam memória
+      </h1>
+      <p class="mt-4 text-lg leading-relaxed text-fg-muted">
+        Todo agente de IA de terminal persiste sessões no disco. <strong class="text-fg">Persistência
+        não é diferencial de ninguém</strong> — todos guardam. O que muda, e o que realmente importa
+        para construir <em>recall</em> em cima, é o <strong class="text-fg">shape</strong>: a forma como
+        cada um organiza esses dados. Existem duas filosofias, e este documento mostra as duas com dados
+        reais lidos do disco.
+      </p>
+
+      <div class="callout callout-info">
+        <i data-lucide="terminal" class="ci"></i>
+        <div>
+          <p class="callout-title"><span>Como esses números foram obtidos</span></p>
+          <p>
+            Tudo aqui veio de inspecionar diretamente o sistema de arquivos (<span class="ce">find</span>,
+            <span class="ce">ls</span>, parsing de JSON) — não de documentação. A verdade está no disco,
+            não no docs.
+          </p>
+        </div>
+      </div>
+
+      <!-- PLACAR -->
+      <section aria-labelledby="placar-h">
+        <h2 id="placar-h" class="prose-h2">O placar — todos persistem</h2>
+        <p class="prose-p">
+          Cinco agentes inspecionados na mesma máquina. Quatro têm armazenamento confirmado; o quinto
+          existe mas não expôs o formato numa varredura rasa.
+        </p>
+        <div class="spec-wrap">
+          <table class="spec" aria-label="Persistência por agente: localização, formato e filosofia">
+            <thead>
+              <tr><th scope="col">Agente</th><th scope="col">Localização</th><th scope="col">Formato</th><th scope="col">Filosofia</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-semibold text-fg-strong">Claude Code</td>
+                <td><code class="ce">~/.claude/projects/&lt;proj&gt;/*.jsonl</code></td>
+                <td>691 sessões · maior 12&nbsp;MB</td>
+                <td><span class="pill pill-yellow">event log</span></td>
+              </tr>
+              <tr>
+                <td class="font-semibold text-fg-strong">OpenCode</td>
+                <td><code class="ce">~/.local/share/opencode/storage/</code></td>
+                <td>6.265 JSON · 558&nbsp;MB</td>
+                <td><span class="pill pill-violet">document store</span></td>
+              </tr>
+              <tr>
+                <td class="font-semibold text-fg-strong">Codex</td>
+                <td><code class="ce">~/.codex/history.jsonl</code></td>
+                <td>1 log global</td>
+                <td><span class="pill pill-yellow">event log</span></td>
+              </tr>
+              <tr>
+                <td class="font-semibold text-fg-strong">Hermes</td>
+                <td><code class="ce">~/.hermes/sessions/&lt;ts&gt;_&lt;hash&gt;.jsonl</code></td>
+                <td>1 arquivo por sessão</td>
+                <td><span class="pill pill-yellow">event log</span></td>
+              </tr>
+              <tr>
+                <td class="font-semibold text-fg-strong">Pi</td>
+                <td><code class="ce">~/.pi/</code></td>
+                <td>existe · formato não confirmado</td>
+                <td><span class="pill pill-gray">?</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-warn">
+          <i data-lucide="trophy" class="ci"></i>
+          <div>
+            <p class="callout-title"><span>A surpresa</span></p>
+            <p>
+              O Claude Code, que parecia ser o que <em>não</em> tinha persistência, é na verdade o
+              <strong>campeão de acúmulo</strong>: 691 sessões registradas, a maior com 12&nbsp;MB. O
+              que parecia não guardar é o que mais guarda.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- DUAS FILOSOFIAS -->
+      <section aria-labelledby="filosofias-h">
+        <h2 id="filosofias-h" class="prose-h2">As duas filosofias</h2>
+        <p class="prose-p">
+          A diferença real não é "tem ou não tem" — é <em>como</em>. Toda a tabela acima colapsa em dois
+          modelos opostos de organizar a mesma informação.
+        </p>
+
+        <div class="my-6 grid gap-4 md:grid-cols-2">
+          <article class="rounded-xl border border-warn/30 bg-warn/5 p-5">
+            <div class="mb-2 flex items-center gap-2">
+              <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-warn/40 bg-warn/10 text-warn">
+                <i data-lucide="scroll-text" class="ic h-5 w-5"></i>
+              </span>
+              <h3 class="font-semibold text-fg-strong">Event log append-only</h3>
+            </div>
+            <p class="text-sm text-fg-muted">
+              Uma sessão = um arquivo <span class="ce">.jsonl</span> = um evento por linha. Você só
+              <em>acrescenta</em> ao fim. Tudo (mensagem, anexo, snapshot, permissão) vive intercalado no
+              mesmo fluxo. Para reconstruir o estado, você <strong>reproduz a stream</strong>.
+            </p>
+            <p class="mt-2 text-xs text-fg-dim">Claude Code · Codex · Hermes</p>
+          </article>
+
+          <article class="rounded-xl border border-violet/30 bg-violet/5 p-5">
+            <div class="mb-2 flex items-center gap-2">
+              <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-violet/40 bg-violet/10 text-violet">
+                <i data-lucide="database" class="ic h-5 w-5"></i>
+              </span>
+              <h3 class="font-semibold text-fg-strong">Document store normalizado</h3>
+            </div>
+            <p class="text-sm text-fg-muted">
+              Entidades separadas em arquivos próprios (<span class="ce">session</span>,
+              <span class="ce">message</span>, <span class="ce">part</span>), em diretórios
+              hierárquicos, joináveis por ID. <strong>Acesso aleatório</strong> e quase pronto para query.
+            </p>
+            <p class="mt-2 text-xs text-fg-dim">OpenCode</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- EVENT LOG: exemplo Claude Code -->
+      <section aria-labelledby="filosofia-stream-h">
+        <h3 id="filosofia-stream-h" class="prose-h3">Filosofia 1 · O stream (Claude Code)</h3>
+        <p class="prose-p">
+          Uma única sessão do Claude Code é um arquivo <span class="ce">.jsonl</span>. Cada linha é um
+          evento autocontido. Na maior sessão deste disco, os tipos de evento se distribuem assim — repare
+          como mensagem, anexo, snapshot de arquivo e mudança de permissão dividem o <em>mesmo</em> fluxo:
+        </p>
+
+        <div class="stream my-5" role="list" aria-label="Distribuição de eventos na sessão">
+          <div class="evt border-brand" role="listitem"><b class="text-brand">assistant</b><span>1.477 eventos · resposta do modelo</span></div>
+          <div class="evt border-brand" role="listitem"><b class="text-brand">user</b><span>967 eventos · prompt do usuário</span></div>
+          <div class="evt border-ok" role="listitem"><b class="text-ok">attachment</b><span>1.718 eventos · arquivos anexados</span></div>
+          <div class="evt border-violet" role="listitem"><b class="text-violet">file-history-snapshot</b><span>399 eventos · estado de arquivos (inline!)</span></div>
+          <div class="evt border-fg-dim" role="listitem"><b class="text-fg-muted">system</b><span>331 eventos</span></div>
+          <div class="evt border-warn" role="listitem"><b class="text-warn">permission-mode</b><span>132 eventos · mudança de permissão</span></div>
+          <div class="evt border-warn" role="listitem"><b class="text-warn">last-prompt</b><span>124 eventos</span></div>
+          <div class="evt border-fg-dim" role="listitem"><b class="text-fg-muted">queue-operation</b><span>2 eventos</span></div>
+        </div>
+
+        <div class="callout callout-note">
+          <i data-lucide="camera" class="ci"></i>
+          <div>
+            <p class="callout-title"><span>Snapshot dentro do log</span></p>
+            <p>
+              Note os 399 <span class="ce">file-history-snapshot</span>: o Claude Code versiona o estado
+              dos arquivos <em>dentro</em> da própria stream. É o equivalente ao diretório
+              <span class="ce">snapshot/</span> do OpenCode — mesma ideia, lugar diferente.
+            </p>
+          </div>
+        </div>
+
+        <p class="prose-p">Uma linha do <span class="ce">.jsonl</span> é só um objeto JSON:</p>
+        <figure class="code-block">
+          <figcaption class="code-head">
+            <span class="code-lang"><i data-lucide="file-code-2" class="ic h-3.5 w-3.5"></i> ~/.claude/projects/&lt;proj&gt;/&lt;uuid&gt;.jsonl</span>
+            <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+          </figcaption>
+          <pre><code class="language-json">{"type":"user","sessionId":"59776c9a-…","timestamp":"…","message":{…}}
+{"type":"assistant","sessionId":"59776c9a-…","message":{…}}
+{"type":"file-history-snapshot","sessionId":"59776c9a-…","snapshot":{…}}
+{"type":"permission-mode","permissionMode":"acceptEdits","sessionId":"59776c9a-…"}</code></pre>
+        </figure>
+      </section>
+
+      <!-- DOC STORE: exemplo OpenCode -->
+      <section aria-labelledby="filosofia-arvore-h">
+        <h3 id="filosofia-arvore-h" class="prose-h3">Filosofia 2 · A árvore (OpenCode)</h3>
+        <p class="prose-p">
+          O OpenCode quebra a mesma informação em entidades separadas, aninhadas por ID. A relação é
+          <strong>project → session → message → part</strong>, com chaves estrangeiras embutidas:
+        </p>
+
+        <div class="my-6 space-y-2">
+          <div class="docbox border-ok/40 bg-ok/5">
+            <div class="docbox-label text-ok"><i data-lucide="folder" class="ic h-4 w-4"></i> session/&lt;projectID&gt;/ses_*.json · 36</div>
+            <p class="font-mono text-xs text-fg-dim">id · projectID · directory · title · time · summary{additions, deletions, files}</p>
+            <div class="mt-2 ml-3 border-l border-ink-600 pl-3">
+              <div class="docbox border-brand/40 bg-brand/5">
+                <div class="docbox-label text-brand"><i data-lucide="message-square" class="ic h-4 w-4"></i> message/ses_&lt;sessionID&gt;/msg_*.json · 1.064</div>
+                <p class="font-mono text-xs text-fg-dim">id · sessionID · role · agent · model{providerID, modelID} · time</p>
+                <div class="mt-2 ml-3 border-l border-ink-600 pl-3">
+                  <div class="docbox border-violet/40 bg-violet/5">
+                    <div class="docbox-label text-violet"><i data-lucide="puzzle" class="ic h-4 w-4"></i> part/msg_&lt;messageID&gt;/prt_*.json · 4.745</div>
+                    <p class="font-mono text-xs text-fg-dim">o conteúdo real — texto, tool calls, resultados</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="prose-p">Cada entidade é um arquivo JSON pequeno e legível:</p>
+        <figure class="code-block">
+          <figcaption class="code-head">
+            <span class="code-lang"><i data-lucide="file-json" class="ic h-3.5 w-3.5"></i> storage/session/&lt;projectID&gt;/ses_*.json</span>
+            <button class="copy-btn" type="button"><i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar</button>
+          </figcaption>
+          <pre><code class="language-json">{
+  "id": "ses_44b3d1b2dffe8xz4MQzKhULHvj",
+  "version": "1.1.15",
+  "projectID": "445c16c60c98d41d6f39412a7f4fb909e0fe61bf",
+  "directory": "/home/g/Documentos/entertainment-web-app",
+  "title": "Translation of auth components",
+  "time": { "created": 1768264230098, "updated": 1768268402695 },
+  "summary": { "additions": 820, "deletions": 110, "files": 10 }
+}</code></pre>
+        </figure>
+
+        <div class="callout callout-ok">
+          <i data-lucide="gift" class="ci"></i>
+          <div>
+            <p class="callout-title"><span>Metadado de graça</span></p>
+            <p>
+              O store já entrega, sem custo, o que um recall normalmente teria que calcular: modelo e
+              agente <em>por mensagem</em> (<span class="ce">model{providerID, modelID}</span>), e volume
+              de edição <em>por sessão</em> (<span class="ce">summary{additions, deletions, files}</span>).
+              Tem ainda um marcador <span class="ce">migration</span> + campo
+              <span class="ce">version</span> — ou seja, o formato <strong>migra entre versões</strong>, e
+              quem lê precisa ser <em>version-aware</em>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMPARATIVO -->
+      <section aria-labelledby="comparativo-h">
+        <h2 id="comparativo-h" class="prose-h2">Stream vs. árvore — o trade-off</h2>
+        <p class="prose-p">
+          Nenhum é "melhor". Cada filosofia otimiza um lado e paga no outro:
+        </p>
+        <div class="spec-wrap">
+          <table class="spec">
+            <thead>
+              <tr><th scope="col">Critério</th><th scope="col"><span class="pill pill-yellow">Event log</span></th><th scope="col"><span class="pill pill-violet">Document store</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Custo de escrita</td><td>Mínimo — só dá <em>append</em></td><td>Maior — vários arquivos por turno</td></tr>
+              <tr><td>Consulta pontual</td><td>Cara — parsear a stream toda</td><td>Barata — acesso direto por ID</td></tr>
+              <tr><td>Replay / auditoria</td><td>Natural — é a ordem dos eventos</td><td>Precisa reordenar por <span class="ce">time</span></td></tr>
+              <tr><td>Acesso aleatório</td><td>Fraco</td><td>Forte</td></tr>
+              <tr><td>Pronto para recall</td><td>Precisa de passe de parse + índice</td><td>Quase query-ready</td></tr>
+              <tr><td>Arquivos em disco</td><td>Poucos (1 por sessão)</td><td>Muitos (milhares pequenos)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- IMPLICAÇÃO -->
+      <section aria-labelledby="implicacao-h">
+        <h2 id="implicacao-h" class="prose-h2">O que isso significa para um recall</h2>
+        <p class="prose-p">
+          Se a meta é um recall <strong>universal</strong> — que leia memória de qualquer agente — a
+          consequência é direta: ele precisa <strong>falar as duas línguas</strong>.
+        </p>
+        <div class="my-6 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-xl border border-ink-700 bg-ink-800/60 p-5">
+            <div class="mb-2 flex items-center gap-2 text-warn">
+              <i data-lucide="scroll-text" class="ic h-5 w-5"></i>
+              <span class="font-semibold text-fg-strong">Para os streams</span>
+            </div>
+            <p class="text-sm text-fg-muted">
+              Claude Code, Codex, Hermes → um <strong>passe de parse</strong> linha a linha, agrupando por
+              <span class="ce">sessionId</span> e indexando antes de consultar.
+            </p>
+          </div>
+          <div class="rounded-xl border border-ink-700 bg-ink-800/60 p-5">
+            <div class="mb-2 flex items-center gap-2 text-violet">
+              <i data-lucide="database" class="ic h-5 w-5"></i>
+              <span class="font-semibold text-fg-strong">Para o store</span>
+            </div>
+            <p class="text-sm text-fg-muted">
+              OpenCode → walk dos diretórios <span class="ce">session → message → part</span>, já joinável.
+              Metade do trabalho de um recall já está escrita pela própria ferramenta.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout callout-info">
+          <i data-lucide="key-round" class="ci"></i>
+          <div>
+            <p class="callout-title"><span>O detalhe do projectID</span></p>
+            <p>
+              Cuidado com a identidade de projeto: o OpenCode chaveia por um <strong>hash</strong>
+              (<span class="ce">445c16…</span>, o mesmo dos snapshots), enquanto recalls costumam chavear
+              por <strong>git URL / UUID próprio</strong>. Alinhar os dois exige um mapeamento
+              <span class="ce">hash&nbsp;↔&nbsp;git-url</span> no meio.
+            </p>
+          </div>
+        </div>
+
+        <div class="callout callout-ok">
+          <i data-lucide="check-check" class="ci"></i>
+          <div>
+            <p class="callout-title"><span>Conclusão</span></p>
+            <p>
+              <strong>Persistência não diferencia ninguém — todos guardam.</strong> O diferencial é o
+              <em>shape</em>, e é ele que decide o quão fácil é construir recall em cima. Antes de escrever
+              um único byte de storage novo, vale olhar o que o agente já deixou no disco.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer role="contentinfo" class="mt-16 border-t border-ink-700 pt-8 text-sm text-fg-dim">
+        <p>
+          Documento companheiro do
+          <a class="prose-a" href="index.html">Hub de Documentação do OpenCode</a> — dados obtidos por
+          inspeção direta do filesystem.
+        </p>
+      </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+      lucide.createIcons();
+      // Ícones decorativos
+      document.querySelectorAll('.ci svg, .ic svg').forEach(function (svg) {
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+      });
+      document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var code = btn.closest('.code-block').querySelector('pre code');
+          var done = function () {
+            btn.classList.add('copied');
+            btn.innerHTML = '<i data-lucide="check" class="ic h-3.5 w-3.5"></i> Copiado';
+            lucide.createIcons({ nameAttr: 'data-lucide' });
+            setTimeout(function () {
+              btn.classList.remove('copied');
+              btn.innerHTML = '<i data-lucide="copy" class="ic h-3.5 w-3.5"></i> Copiar';
+              lucide.createIcons({ nameAttr: 'data-lucide' });
+            }, 2000);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code.textContent).then(done);
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = code.textContent;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            done();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
