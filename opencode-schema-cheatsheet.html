@@ -1,0 +1,792 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>opencode config schema &mdash; cheat sheet</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--text-dim:#8b949e;--accent:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;--purple:#bc8cff;--orange:#d4760a;--font:ui-monospace,'SF Mono','Cascadia Code','JetBrains Mono',Consolas,monospace;--font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);line-height:1.6;padding:2rem 1.5rem;max-width:960px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--font-sans);font-weight:600;line-height:1.3}
+h1{font-size:2rem;margin-bottom:.25rem;color:var(--accent)}
+h1+p{color:var(--text-dim);margin-bottom:2rem;font-size:.95rem}
+h2{font-size:1.4rem;margin:2.5rem 0 1rem;padding-bottom:.4rem;border-bottom:1px solid var(--border);color:var(--accent)}
+h3{font-size:1.1rem;margin:1.5rem 0 .6rem;color:var(--green)}
+h4{font-size:1rem;margin:1rem 0 .4rem;color:var(--yellow)}
+p,li{margin-bottom:.5rem;color:var(--text)}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--font);font-size:.85em;background:var(--surface);padding:.15em .4em;border-radius:4px;border:1px solid var(--border)}
+pre{font-family:var(--font);font-size:.85rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1rem;overflow-x:auto;margin:.6rem 0 1.2rem;position:relative;line-height:1.45}
+pre .copy-btn{position:absolute;top:6px;right:8px;background:var(--border);color:var(--text-dim);border:none;border-radius:4px;padding:2px 8px;font-size:.7rem;cursor:pointer;font-family:var(--font-sans)}
+pre .copy-btn:hover{background:var(--accent);color:var(--bg)}
+pre.copied::after{content:"\u2713 copied";position:absolute;top:6px;right:8px;font-size:.7rem;color:var(--green)}
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.2rem 1.5rem;margin:1.5rem 0 2rem}
+.toc ol{margin-left:1.2rem}
+.toc li{margin-bottom:.3rem}
+.toc a{color:var(--text)}
+.toc a:hover{color:var(--accent)}
+.tag{display:inline-block;font-size:.7rem;font-weight:600;padding:.1rem .5rem;border-radius:4px;margin-right:.3rem;font-family:var(--font-sans);vertical-align:middle}
+.tag-dep{background:#3d1f00;color:var(--orange)}
+.tag-key{background:#0d3d1a;color:var(--green)}
+.table-wrap{overflow-x:auto;margin:1rem 0 1.5rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--border)}
+th{background:#1c2336;color:var(--accent);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td code{font-size:.8rem}
+.gotcha{background:#2d1515;border-left:4px solid var(--red);padding:.8rem 1rem;margin:.8rem 0;border-radius:0 6px 6px 0}
+.gotcha strong{color:var(--red)}
+.tip{background:#152d1a;border-left:4px solid var(--green);padding:.8rem 1rem;margin:.8rem 0;border-radius:0 6px 6px 0}
+.insight{background:#1a233d;border-left:4px solid var(--purple);padding:.8rem 1rem;margin:.8rem 0;border-radius:0 6px 6px 0}
+details{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.5rem 1rem;margin:.5rem 0 1rem}
+details summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details[open] summary{margin-bottom:.5rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.gloss-term{font-weight:600;color:var(--green)}
+.arrow{color:var(--text-dim);margin:0 .3rem}
+.badge{display:inline-block;font-size:.65rem;font-weight:700;padding:.1rem .5rem;border-radius:10px;background:var(--border);color:var(--text-dim)}
+ul,ol{padding-left:1.5rem}
+li{margin-bottom:.25rem}
+hr{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+.flex{display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+@media(max-width:640px){body{padding:1rem .75rem}h1{font-size:1.5rem}h2{font-size:1.15rem}.toc{padding:.8rem}}
+</style>
+</head>
+<body>
+<h1>opencode config schema</h1>
+<p>Cheat sheet &mdash; JSON Schema mapped to mental models you already know.<br>
+<code>$schema: https://opencode.ai/config.json</code> &bull; auto-contido &bull; consulta r&aacute;pida</p>
+
+<div class="toc">
+<strong>Indice</strong>
+<ol>
+  <li><a href="#how-to-read">Como ler um JSON Schema</a></li>
+  <li><a href="#ts-equiv">Equivalencia mental com TypeScript</a></li>
+  <li><a href="#config-vs-schema">Config / Schema / Runtime</a></li>
+  <li><a href="#agentconfig">AgentConfig explicado</a></li>
+  <li><a href="#agent-vs-mode">agent vs mode (legado) vs AgentConfig.mode</a></li>
+  <li><a href="#tools-plugins">Tools, plugins &amp; hooks</a></li>
+  <li><a href="#schema-parts">Partes do schema</a></li>
+  <li><a href="#tutorial-myplugin">8. Tutorial pratico: criando o MyPlugin</a></li>
+  <li><a href="#gotchas">9. Pegadinhas / Gotchas</a></li>
+  <li><a href="#glossary">10. Glossario rapido</a></li>
+</div>
+
+<!-- ============================================================ -->
+<section id="how-to-read">
+<h2>1. Como ler um JSON Schema</h2>
+
+<p>O JSON Schema &eacute; um contrato declarativo que descreve <strong>a forma</strong> de um JSON. O opencode usa ele para validar <code>opencode.json</code> na inicializa&ccedil;&atilde;o &mdash; se algo viola o schema, o programa nem sobe.</p>
+
+<p>O schema &eacute; um JSON normal com keywords especiais. As principais:</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Keyword</th><th>O que faz</th><th>Analogia TS</th></tr>
+</thead>
+<tbody>
+<tr><td><code>type</code></td><td>Declara o tipo primitivo</td><td><code>string</code> / <code>number</code> / <code>boolean</code> / <code>object</code> / <code>array</code></td></tr>
+<tr><td><code>properties</code></td><td>Campos de um objeto</td><td><code>interface { ... }</code></td></tr>
+<tr><td><code>required</code></td><td>Campos obrigatorios</td><td>Campo sem <code>?</code> na interface</td></tr>
+<tr><td><code>additionalProperties</code></td><td>Se <code>false</code>: objeto fechado. Se <code>{&quot;$ref&quot;}</code>: chaves soltas seguem outra defini&ccedil;&atilde;o</td><td><code>{ [key: string]: T }</code> vs interface fechada</td></tr>
+<tr><td><code>enum</code></td><td>Valores literais permitidos</td><td><code>type X = &quot;a&quot; | &quot;b&quot; | &quot;c&quot;</code></td></tr>
+<tr><td><code>anyOf</code></td><td>Uni&atilde;o <strong>permissiva</strong> &mdash; pelo menos um match</td><td><code>string | number</code></td></tr>
+<tr><td><code>oneOf</code></td><td>Uni&atilde;o <strong>exclusiva</strong> &mdash; exatamente um match</td><td>Sem equivalente direto; mais restrito que <code>|</code></td></tr>
+<tr><td><code>allOf</code></td><td>Composi&ccedil;&atilde;o &mdash; todos devem passar (intersec&ccedil;&atilde;o)</td><td><code>A &amp; B</code></td></tr>
+<tr><td><code>$ref</code></td><td>Referencia a outra defini&ccedil;&atilde;o</td><td><code>SomeType</code> (import)</td></tr>
+<tr><td><code>$defs</code></td><td>Bloco de defini&ccedil;&otilde;es reutilizaveis</td><td>Bloco <code>type X = ...</code> no topo</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="insight">
+<strong>Leitura pratica:</strong> Quando voce ve <code>&quot;$ref&quot;: &quot;#/$defs/AgentConfig&quot;</code>, leia como <code>AgentConfig</code>. Quando ve <code>&quot;anyOf&quot;: [{&quot;type&quot;:&quot;string&quot;}, {&quot;type&quot;:&quot;boolean&quot;}]</code>, leia como <code>string | boolean</code>. O schema &eacute; uma AST, nao um formato de dados &mdash; ele <em>descreve</em> o formato valido.
+</div>
+
+<p>O prefixo <code>$</code> em <code>$schema</code>, <code>$ref</code>, <code>$defs</code> &eacute; <strong>conven&ccedil;&atilde;o do JSON Schema</strong>. Nao tem nada a ver com o loop de runtime nem com variaveis de template.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="ts-equiv">
+<h2>2. Equivalencia mental com TypeScript</h2>
+
+<p>Se voce pensa em TypeScript, aqui esta a tradu&ccedil;&atilde;o direta de cada padrao do schema do opencode:</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Schema (JSON)</th><th>TypeScript equivalente</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>&quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;a&quot;,&quot;b&quot;]</code></td>
+  <td><code>&quot;a&quot; | &quot;b&quot;</code></td>
+</tr>
+<tr>
+  <td><code>{ &quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: { &quot;x&quot;: {...} }, &quot;additionalProperties&quot;: false }</code></td>
+  <td><code>interface { x: ... }</code> (fechado)</td>
+</tr>
+<tr>
+  <td><code>{ &quot;type&quot;: &quot;object&quot;, &quot;additionalProperties&quot;: { &quot;$ref&quot;: &quot;#/$defs/X&quot; } }</code></td>
+  <td><code>{ [key: string]: X }</code></td>
+</tr>
+<tr>
+  <td><code>&quot;anyOf&quot;: [{ &quot;type&quot;: &quot;boolean&quot; }, { &quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: [&quot;notify&quot;] }]</code></td>
+  <td><code>boolean | &quot;notify&quot;</code></td>
+</tr>
+<tr>
+  <td><code>&quot;allOf&quot;: [{ &quot;$ref&quot;: &quot;#/$defs/A&quot; }, { &quot;$ref&quot;: &quot;#/$defs/B&quot; }]</code></td>
+  <td><code>A &amp; B</code></td>
+</tr>
+<tr>
+  <td><code>{ &quot;$ref&quot;: &quot;#/$defs/AgentConfig&quot; }</code></td>
+  <td><code>AgentConfig</code> (import/referencia)</td>
+</tr>
+<tr>
+  <td><code>&quot;required&quot;: [&quot;a&quot;, &quot;b&quot;]</code></td>
+  <td>Campos <strong>sem</strong> <code>?</code></td>
+</tr>
+<tr>
+  <td><code>description</code> no schema</td>
+  <td>Comentario JSDoc (<code>/** ... */</code>)</td>
+</tr>
+<tr>
+  <td><code>&quot;$defs&quot;: { &quot;X&quot;: {...}, &quot;Y&quot;: {...} }</code></td>
+  <td><code>type X = ...; type Y = ...;</code> (declara&ccedil;&otilde;es no modulo)</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="gotcha">
+<strong>Cuidado:</strong> Ao contrario do TypeScript, JSON Schema <strong>nao nomeia</strong> tipos automaticamente. <code>$defs</code> &eacute; necessario para reuso. E <code>anyOf</code> &eacute; mais permissivo que <code>oneOf</code> &mdash; <code>oneOf</code> falha se mais de uma alternativa casar.
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="config-vs-schema">
+<h2>3. Config / Schema / Runtime</h2>
+
+<div class="flex" style="gap:0.5rem;margin:0.8rem 0;">
+  <span class="tag tag-key">config instance</span>
+  <span class="arrow">&rarr;</span>
+  <span class="tag tag-key">schema validation</span>
+  <span class="arrow">&rarr;</span>
+  <span class="tag tag-key">runtime behavior</span>
+</div>
+
+<p>Sao tres camadas distintas que e facil confundir:</p>
+
+<table>
+<thead><tr><th>Camada</th><th>O que &eacute;</th><th>Exemplo</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Config</strong></td>
+  <td>O JSON que voce escreve em <code>opencode.json</code></td>
+  <td><code>&quot;default_agent&quot;: &quot;raphael&quot;</code></td>
+</tr>
+<tr>
+  <td><strong>Schema</strong></td>
+  <td>O contrato em <code>https://opencode.ai/config.json</code> que valida a config</td>
+  <td><code>&quot;default_agent&quot;: { &quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;...&quot; }</code></td>
+</tr>
+<tr>
+  <td><strong>Runtime</strong></td>
+  <td>O motor que <em>executa</em> o comportamento baseado na config</td>
+  <td>Ler <code>default_agent</code> e redirecionar o chat</td>
+</tr>
+</tbody>
+</table>
+
+<div class="tip">
+<strong>Regra pratica:</strong> O schema descreve <strong>forma</strong> (o que pode ser escrito). O runtime executa <strong>comportamento</strong> (o que acontece quando &eacute; lido). Um campo pode ser valido no schema mas ignorado no runtime (ex: <code>autoshare</code> &mdash; deprecated, schema ainda aceita, runtime nao usa).
+</div>
+
+<p>O schema do opencode tem uma raiz (<code>$defs.Config</code>) que e o top-level <code>opencode.json</code>. Dentro dela, <code>additionalProperties: false</code> &mdash; chaves desconhecidas sao rejeitadas com <code>ConfigInvalidError</code>.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="agentconfig">
+<h2>4. AgentConfig explicado</h2>
+
+<p>Conheca <code>$defs.AgentConfig</code> &mdash; o tipo mais importante do schema. Ele descreve <strong>cada entrada</strong> dentro de <code>agent: { ... }</code>.</p>
+
+
+<pre>
+{
+  &quot;model&quot;?      : string,      // &quot;provider/model-id&quot;
+  &quot;variant&quot;?    : string,      // variante default do modelo
+  &quot;temperature&quot;? : number,
+  &quot;top_p&quot;?      : number,
+  &quot;prompt&quot;?     : string,      // system prompt inline
+  &quot;description&quot;?: string,      // quando usar o agente
+  &quot;mode&quot;?       : &quot;subagent&quot; | &quot;primary&quot; | &quot;all&quot;,   // PAPEL
+  &quot;hidden&quot;?     : boolean,     // oculta do @-menu
+  &quot;disable&quot;?    : boolean,     // desliga built-in
+  &quot;color&quot;?      : string,      // &quot;#FF5733&quot; | &quot;primary&quot; | &quot;error&quot;
+  &quot;steps&quot;?      : number,      // max iteracoes antes de fallback
+  &quot;permission&quot;? : PermissionConfig,
+  &quot;options&quot;?    : object       // extra, roteado sem valida&ccedil;&atilde;o
+}
+</pre>
+
+<div class="insight">
+<strong>mode aqui e o AgentConfig.mode:</strong>
+<ul>
+  <li><code>&quot;subagent&quot;</code> &mdash; so pode ser chamado por outro agente, nao aparece como entrada de chat</li>
+  <li><code>&quot;primary&quot;</code> &mdash; entrada propria no seletor de agente, pode iniciar conversas</li>
+  <li><code>&quot;all&quot;</code> &mdash; ambos: entrada propria <em>e</em> chamaavel por outros agentes</li>
+</ul>
+</div>
+
+<h3>Como definir um agente</h3>
+
+<p><strong>Inline</strong> (dentro do <code>opencode.json</code>):</p>
+
+<pre>
+&quot;agent&quot;: {
+  &quot;my-agent&quot;: {
+    &quot;mode&quot;: &quot;subagent&quot;,
+    &quot;model&quot;: &quot;anthropic/claude-sonnet-4-6&quot;,
+    &quot;description&quot;: &quot;Faz X&quot;,
+    &quot;prompt&quot;: &quot;Voce e um especialista em X.&quot;
+  }
+}
+</pre>
+
+<p><strong>Arquivo</strong> (recomendado para prompts longos):</p>
+
+<pre>
+<code>.opencode/agents/my-agent.md</code>  ou  <code>.opencode/agent/my-agent.md</code>
+
+---
+description: Faz X
+mode: subagent
+model: anthropic/claude-sonnet-4-6
+---
+
+Voce e um especialista em X. (body vira o prompt)
+</pre>
+
+<h3>Agentes built-in</h3>
+<p>O schema lista <code>plan</code>, <code>build</code>, <code>general</code>, <code>explore</code>, <code>scout</code> (experimental), mais os internos <code>title</code>, <code>summary</code>, <code>compaction</code>. Para desabilitar um built-in:</p>
+
+<pre>
+&quot;agent&quot;: {
+  &quot;build&quot;: { &quot;disable&quot;: true }
+}
+</pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="agent-vs-mode">
+<h2>5. agent vs mode (legado) vs AgentConfig.mode</h2>
+
+<p>Esse e o ponto que mais confunde. Tres coisas diferentes com o mesmo nome:</p>
+
+<table>
+<thead>
+<tr><th>O que</th><th>Onde vive</th><th>O que faz</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>agent</code></td>
+  <td>Top-level: <code>&quot;agent&quot;: { ... }</code></td>
+  <td>Dicionario de todos os agentes configurados (built-in + custom)</td>
+  <td><span class="tag tag-key">atual</span></td>
+</tr>
+<tr>
+  <td><code>mode</code> (top-level)</td>
+  <td><code>&quot;mode&quot;: { &quot;plan&quot;: AgentConfig, &quot;build&quot;: AgentConfig }</code></td>
+  <td>Mesmo que <code>agent</code> mas <strong>legado/deprecated</strong>. Usava <code>mode.plan</code> e <code>mode.build</code> antes de existir <code>agent</code>. Ainda aceito, mas prefira <code>agent</code>.</td>
+  <td><span class="tag tag-dep">deprecated</span></td>
+</tr>
+<tr>
+  <td><code>AgentConfig.mode</code></td>
+  <td>Dentro de <code>agent: { nome: { mode: ... } }</code></td>
+  <td>Enum <code>&quot;subagent&quot; | &quot;primary&quot; | &quot;all&quot;</code> &mdash; <strong>papel do agente</strong></td>
+  <td><span class="tag tag-key">ativo</span></td>
+</tr>
+</tbody>
+</table>
+
+<div class="gotcha">
+<strong>Cuidado!</strong> O <code>mode</code> <em>top-level</em> (objeto com <code>plan</code> e <code>build</code>) e <strong>diferente</strong> do <code>mode</code> <em>dentro de AgentConfig</em> (string literal). Eles convivem no schema mas significam coisas opostas. Um e container, o outro e &quot;papel do agente&quot;.
+</div>
+
+
+<pre>
+// ATUAL &mdash; use <code>agent</code>
+&quot;agent&quot;: {
+  &quot;my-agent&quot;: { &quot;mode&quot;: &quot;subagent&quot;, ... }
+}
+
+// LEGADO &mdash; <code>mode</code> top-level ainda funciona mas e deprecated
+&quot;mode&quot;: {
+  &quot;plan&quot;: { ... }
+}
+
+// O schema aceita ambos; o runtime mergeia.
+</pre>
+</section>
+
+
+<!-- ============================================================ -->
+<section id="tools-plugins">
+<h2>6. Tools, plugins &amp; hooks</h2>
+
+<h3>Tools nativas</h3>
+<p>O opencode expoe tools como capacidades do motor. Voce <strong>nao configura</strong> quais tools existem &mdash; voce configura <strong>permissoes</strong> sobre elas. Tools nativas conhecidas:</p>
+
+<table>
+<thead><tr><th>Tool</th><th>Faz</th><th>Tipo de permission</th></tr></thead>
+<tbody>
+<tr><td><code>read</code></td><td>Ler arquivos</td><td>RuleConfig (string ou pattern)</td></tr>
+<tr><td><code>edit</code></td><td>Editar arquivos</td><td>RuleConfig</td></tr>
+<tr><td><code>glob</code></td><td>Buscar arquivos por padrao</td><td>RuleConfig</td></tr>
+<tr><td><code>grep</code></td><td>Buscar conteudo</td><td>RuleConfig</td></tr>
+<tr><td><code>list</code></td><td>Listar diretorio</td><td>RuleConfig</td></tr>
+<tr><td><code>bash</code></td><td>Executar comandos</td><td>RuleConfig (pattern match)</td></tr>
+<tr><td><code>task</code></td><td>Delegar sub-agente</td><td>RuleConfig</td></tr>
+<tr><td><code>skill</code></td><td>Carregar skill</td><td>RuleConfig</td></tr>
+<tr><td><code>webfetch</code></td><td>HTTP fetch</td><td>ActionConfig (&quot;allow&quot;|&quot;ask&quot;|&quot;deny&quot;)</td></tr>
+<tr><td><code>websearch</code></td><td>Busca web</td><td>ActionConfig</td></tr>
+<tr><td><code>todowrite</code></td><td>Checklist</td><td>ActionConfig</td></tr>
+</tbody>
+</table>
+
+<h3>Plugins</h3>
+<p>Plugin <strong>estende o motor</strong> com hooks &mdash; nao cria tools novas (a nao ser que o hook <code>tool</code> seja usado). A config de plugin e uma array:</p>
+
+
+<pre>
+&quot;plugin&quot;: [
+  &quot;opencode-gemini-auth&quot;,          // npm (latest)
+  &quot;opencode-foo@1.2.3&quot;,            // npm (pinned)
+  &quot;./local-plugin.ts&quot;,             // file path
+  &quot;file:///abs/path/plugin.js&quot;,    // file URL
+  [&quot;opencode-bar&quot;, { &quot;opt&quot;: &quot;v&quot; }] // tupla com options
+]
+</pre>
+
+<details>
+<summary>Hooks disponiveis (superficie de plugin)</summary>
+<table>
+<thead><tr><th>Hook</th><th>Assinatura</th></tr></thead>
+<tbody>
+<tr><td><code>config(cfg)</code></td><td>Mutate cfg no init</td></tr>
+<tr><td><code>event(input)</code></td><td>Todo evento do bus</td></tr>
+<tr><td><code>chat.message</code></td><td>Interceptar mensagem</td></tr>
+<tr><td><code>chat.params</code></td><td>Modificar params da chamada</td></tr>
+<tr><td><code>chat.headers</code></td><td>Modificar headers HTTP</td></tr>
+<tr><td><code>tool.execute.before</code></td><td>Antes da tool rodar</td></tr>
+<tr><td><code>tool.execute.after</code></td><td>Depois da tool rodar</td></tr>
+<tr><td><code>tool.definition</code></td><td>Definir/alterar tool schema</td></tr>
+<tr><td><code>command.execute.before</code></td><td>Antes de comando custom</td></tr>
+<tr><td><code>shell.env</code></td><td>Injetar env vars</td></tr>
+<tr><td><code>permission.ask</code></td><td>Interceptar permissao</td></tr>
+</tbody>
+</table>
+</details>
+
+<div class="tip">
+<strong>Dica:</strong> Plugins tambem podem expor objetos <code>tool</code>, <code>auth</code> e <code>provider</code> &mdash; estes nao sao hooks callback, sao objetos de defini&ccedil;&atilde;o registrados no runtime.
+</div>
+
+<h3>Input / Output / Prompt</h3>
+<p>Conceitos que aparecem em agentes, plugins e commands:</p>
+
+<table>
+<thead><tr><th>Conceito</th><th>O que &eacute;</th></tr></thead>
+<tbody>
+<tr><td><strong>Prompt</strong></td><td>Instru&ccedil;&atilde;o do sistema dada ao modelo. <code>AgentConfig.prompt</code> ou frontmatter <code>prompt:</code> (ou body do .md)</td></tr>
+<tr><td><strong>Input</strong></td><td>Dado que <strong>entra</strong> em uma tool/hook/command. Ex: <code>input.args</code> no hook <code>tool.execute.before</code></td></tr>
+<tr><td><strong>Output</strong></td><td>Dado que <strong>sai</strong> de uma opera&ccedil;&atilde;o. Muta&ccedil;&atilde;o <code>output.args</code> altera o que a tool recebe</td></tr>
+</tbody>
+</table>
+
+<p>Em plugins, o padrao e: receba <code>input</code>, leia/mute <code>output</code>, retorne <code>void</code>. Nao retorne valores &mdash; muta&ccedil;&atilde;o in-place.</p>
+</section>
+
+<!-- ============================================================ -->
+<section id="schema-parts">
+<h2>7. Partes do schema: plugin, permission, mcp, provider, command</h2>
+
+<h3><code>plugin</code> <span class="badge">array</span></h3>
+<p>Array de strings ou tuplas <code>[name, options]</code>. Cada item e um <code>anyOf</code> entre string e tupla. O schema nao valida o conteudo do arquivo &mdash; so a forma da declara&ccedil;&atilde;o.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Formato</th><th>Schema equivalente</th></tr></thead>
+<tbody>
+<tr><td><code>&quot;plugin&quot;: [&quot;pkg-name&quot;]</code></td><td><code>anyOf: [string, [string, object]]</code></td></tr>
+<tr><td><code>&quot;plugin&quot;: [[&quot;pkg&quot;, {opt: 1}]]</code></td><td>Tupla com <code>prefixItems</code> de <code>[string, object]</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3><code>permission</code> <span class="badge">$ref: PermissionConfig</span></h3>
+<p>O shape mais aninhado do schema. <code>PermissionConfig</code> e um <code>anyOf</code> entre:</p>
+<ul>
+  <li><strong>ActionConfig</strong> &mdash; string <code>&quot;allow&quot; | &quot;ask&quot; | &quot;deny&quot;</code> (permissao global unica)</li>
+  <li><strong>Object config</strong> &mdash; objeto com chaves por tool, cada valor sendo <code>PermissionRuleConfig</code></li>
+</ul>
+
+<p><code>PermissionRuleConfig</code> por sua vez e <code>anyOf</code> entre:</p>
+<ul>
+  <li><code>&quot;allow&quot;</code> | <code>&quot;ask&quot;</code> | <code>&quot;deny&quot;</code> (shorthand para <code>{&quot;*&quot;: value}</code>)</li>
+  <li><code>PermissionObjectConfig</code> &mdash; objeto de <code>pattern &rarr; action</code>, ultima regra vence</li>
+</ul>
+
+
+<pre>
+// Formas validas:
+&quot;permission&quot;: &quot;allow&quot;                        // tudo allow (raro, agressivo)
+&quot;permission&quot;: { &quot;edit&quot;: &quot;deny&quot; }             // nega edit, resto default
+&quot;permission&quot;: {
+  &quot;bash&quot;: {
+    &quot;*&quot;: &quot;ask&quot;,                              // catch-all PRIMEIRO
+    &quot;git *&quot;: &quot;allow&quot;,                        // especifica depois
+    &quot;rm *&quot;: &quot;deny&quot;
+  }
+}
+</pre>
+
+<div class="gotcha">
+<strong>Ordem importa!</strong> Em <code>PermissionObjectConfig</code>, a <strong>ultima</strong> regra que match vence. Coloque o catch-all <code>*</code> <strong>primeiro</strong> e as regras especificas depois.
+</div>
+
+<h3><code>mcp</code> <span class="badge">$ref: McpLocalConfig | McpRemoteConfig</span></h3>
+<p>Objeto chaveado por nome de servidor MCP. Discriminado por <code>type</code>:</p>
+
+
+<pre>
+&quot;mcp&quot;: {
+  &quot;my-local&quot;: {
+    &quot;type&quot;: &quot;local&quot;,
+    &quot;command&quot;: [&quot;npx&quot;, &quot;-y&quot;, &quot;@playwright/mcp&quot;],
+    &quot;enabled&quot;: true,
+    &quot;environment&quot;: { &quot;KEY&quot;: &quot;val&quot; }           // NOTA: &quot;environment&quot;, nao &quot;env&quot;
+  },
+  &quot;my-remote&quot;: {
+    &quot;type&quot;: &quot;remote&quot;,
+    &quot;url&quot;: &quot;https://...&quot;,
+    &quot;headers&quot;: { &quot;Authorization&quot;: &quot;Bearer ...&quot; },
+    &quot;oauth&quot;: { &quot;clientId&quot;: &quot;...&quot;, &quot;scope&quot;: &quot;...&quot; }  // ou false para desligar
+  }
+}
+</pre>
+
+<p>Cada valor do objeto <code>mcp</code> na verdade e um <code>anyOf</code> entre:</p>
+<ul>
+  <li>Servidor real (<code>McpLocalConfig | McpRemoteConfig</code>)</li>
+  <li>Objeto <code>{ enabled: boolean }</code> &mdash; util para desabilitar servidor herdado</li>
+</ul>
+
+<div class="gotcha">
+<strong>MCP usa environment, nao env</strong><br>
+O schema de <code>McpLocalConfig</code> chama o campo de variaveis de ambiente de <code>environment</code>. <code>command</code> e <strong>sempre um array de strings</strong>, nunca uma string unica. <code>type</code> e obrigatorio para servidores reais.
+</div>
+
+<h3><code>provider</code> <span class="badge">$ref: ProviderConfig</span></h3>
+<p>Objeto chaveado por nome do provider. Cada provider pode ter <code>options</code> (API keys, baseUrl, etc.), <code>models</code> para overrides, e <code>headers</code> customizados.</p>
+
+
+<pre>
+&quot;provider&quot;: {
+  &quot;anthropic&quot;: {
+    &quot;options&quot;: { &quot;apiKey&quot;: &quot;sk-ant-...&quot; }
+  }
+}
+</pre>
+
+<p>Ha tambem <code>disabled_providers</code> (desliga providers carregados automaticamente) e <code>enabled_providers</code> (whitelist &mdash; so estes rodam).</p>
+
+<h3><code>command</code> <span class="badge">object keyed</span></h3>
+<p>Commands customizaveis (ex: <code>/deploy</code>). Objeto onde cada chave e um comando, com <code>template</code> obrigatorio:</p>
+
+
+<pre>
+&quot;command&quot;: {
+  &quot;deploy&quot;: {
+    &quot;template&quot;: &quot;Faca deploy do {branch} no ambiente de staging&quot;,
+    &quot;description&quot;: &quot;Gera prompt de deploy&quot;,
+    &quot;agent&quot;: &quot;build&quot;,           // opcional: delegar para agente especifico
+    &quot;model&quot;: &quot;...&quot;,             // opcional: modelo especifico
+    &quot;subtask&quot;: true             // opcional: roda como sub-tarefa
+  }
+}
+</pre>
+</section>
+
+<!-- ============================================================ -->
+<section id="tutorial-myplugin">
+<h2>8. Tutorial pratico: criando o MyPlugin</h2>
+
+<p>Este tutorial reconstitui o processo real de cria&ccedil;&atilde;o e depura&ccedil;&atilde;o do plugin <code>plugins/my-plugin.ts</code>. O objetivo era simples: <strong>prefixar todo comando bash com um echo vis&iacute;vel</strong> para confirmar que o plugin est&aacute; ativo durante a execu&ccedil;&atilde;o. O que parecia trivial revelou armadilhas conceituais do sistema de hooks.</p>
+
+<h3>Objetivo</h3>
+
+<p>Injetar <code>echo &quot;[MyPlugin] plugin ativo&quot; &amp;&amp;</code> antes de cada comando <code>bash</code> executado pelo opencode. O usu&aacute;rio v&ecirc; a mensagem no terminal e sabe que o hook funcionou.</p>
+
+<h3>Primeira abordagem (errada)</h3>
+
+<p>A tentativa inicial foi interceptar a tool <code>read</code>:</p>
+
+<pre>
+import type { Plugin } from &quot;@opencode-ai/plugin&quot;;
+
+export const MyPlugin: Plugin = async (_ctx) =&gt; {
+  return {
+    &quot;tool.execute.before&quot;: async (input, output) =&gt; {
+      if (input.tool === &quot;read&quot;) {
+        // Tentativa errada: read nao usa &quot;command&quot;
+        output.args.command = &quot;echo ativo &amp;&amp; ${original}&quot;;
+      }
+    },
+  };
+};
+</pre>
+
+<div class="gotcha">
+<strong>N&atilde;o funcionou &mdash; eis por qu&ecirc;:</strong>
+<ul>
+  <li>A tool <code>read</code> <strong>n&atilde;o usa o campo <code>command</code></strong>. <code>read</code> espera <code>path</code> ou <code>filePath</code> &mdash; n&atilde;o existe <code>args.command</code> nela.</li>
+  <li>O campo extra <code>command</code> foi simplesmente <strong>ignorado pelo runtime</strong>. O motor s&oacute; l&ecirc; os campos que cada tool reconhece; qualquer campo extra &eacute; descartado sem erro.</li>
+  <li>Nenhum comando foi alterado, nenhum echo apareceu &mdash; e <strong>sem mensagem de erro</strong>. O hook executou, mas a muta&ccedil;&atilde;o n&atilde;o surtiu efeito.</li>
+</ul>
+</div>
+
+<div class="insight">
+<strong>Li&ccedil;&atilde;o 1:</strong> Cada tool tem seu pr&oacute;prio conjunto de argumentos. Mutar <code>output.args</code> s&oacute; funciona se o campo alterado for <strong>realmente lido</strong> pelo runtime daquela tool. Conhe&ccedil;a os args de cada tool antes de interceptar.
+</div>
+
+<h3>Escolha da tool correta</h3>
+
+<p>O comando que queremos prefixar &eacute; executado pelo shell &mdash; logo, a tool certa &eacute; <code>bash</code>. &Eacute; a &uacute;nica tool do opencode que usa <code>args.command</code> como campo de execu&ccedil;&atilde;o.</p>
+
+<p>A corre&ccedil;&atilde;o foi trocar a guarda de <code>input.tool === &quot;read&quot;</code> para <code>input.tool === &quot;bash&quot;</code>.</p>
+
+<h3>Estrutura do hook <code>tool.execute.before</code></h3>
+
+<p>O hook recebe dois par&acirc;metros:</p>
+
+<table>
+<thead><tr><th>Par&acirc;metro</th><th>O que cont&eacute;m</th><th>Uso no MyPlugin</th></tr></thead>
+<tbody>
+<tr><td><code>input</code></td><td>Metadados da chamada: <code>input.tool</code> (nome da tool), <code>input.args</code> (argumentos originais, apenas-leitura)</td><td>Filtrar qual tool interceptar via <code>input.tool</code></td></tr>
+<tr><td><code>output</code></td><td>Objeto <code>output.args</code> que <strong>pode ser mutado</strong> para alterar os argumentos que a tool ver&aacute;</td><td>Injetar o prefixo em <code>output.args.command</code></td></tr>
+</tbody>
+</table>
+
+<div class="tip">
+<strong>Dica:</strong> <code>input</code> &eacute; apenas-leitura por conven&ccedil;&atilde;o. <code>output</code> &eacute; o objeto de muta&ccedil;&atilde;o. N&atilde;o retorne valores &mdash; a comunica&ccedil;&atilde;o &eacute; feita por muta&ccedil;&atilde;o in-place de <code>output.args</code>.
+</div>
+
+<h3>A guarda de tipo</h3>
+
+<p>Mesmo com a tool certa, <code>output.args.command</code> pode ser <code>undefined</code> (chamadas internas podem n&atilde;o ter <code>command</code> como string simples). Sem a guarda, o c&oacute;digo quebraria com <code>TypeError</code>.</p>
+
+<pre>
+// Correto: guarda de tipo antes de mutar
+if (typeof output.args.command === &quot;string&quot;) {
+  const original = output.args.command;
+  output.args.command = `echo &quot;[MyPlugin] plugin ativo&quot; &amp;&amp; ${original}`;
+}
+</pre>
+
+<div class="gotcha">
+<strong>Pegadinha:</strong> Sem o <code>typeof</code> check, o TypeScript at&eacute; compila (se o tipo de <code>command</code> for <code>string | undefined</code>), mas em runtime <code>undefined</code> quebra a interpola&ccedil;&atilde;o. A guarda n&atilde;o &eacute; opcional &mdash; &eacute; <strong>obrigat&oacute;ria</strong> para plugins robustos.
+</div>
+
+<h3>C&oacute;digo final</h3>
+
+<p>Vers&atilde;o completa e funcional do plugin:</p>
+
+<pre>
+import type { Plugin } from &quot;@opencode-ai/plugin&quot;;
+
+// Plugin m&iacute;nimo: prefixar todo comando bash com um echo vis&iacute;vel,
+// para confirmar que o hook est&aacute; ativo durante a execu&ccedil;&atilde;o.
+export const MyPlugin: Plugin = async (_ctx) =&gt; {
+  return {
+    &quot;tool.execute.before&quot;: async (input, output) =&gt; {
+      // S&oacute; intercepta a tool &quot;bash&quot; &mdash; outras tools passam sem altera&ccedil;&atilde;o
+      if (input.tool === &quot;bash&quot;) {
+        // Guarda de tipo: s&oacute; altera se command for string (evita undefined)
+        if (typeof output.args.command === &quot;string&quot;) {
+          const original = output.args.command;
+
+          // Prefixa o comando original com um echo identificador,
+          // assim o usu&aacute;rio v&ecirc; &quot;[MyPlugin] plugin ativo&quot; no terminal
+          output.args.command = `echo &quot;[MyPlugin] plugin ativo&quot; &amp;&amp; ${original}`;
+        }
+      }
+    },
+  };
+};
+</pre>
+
+<h3>Ativa&ccedil;&atilde;o no opencode.json</h3>
+
+<p>Registre o plugin no <code>opencode.json</code>:</p>
+
+<pre>
+&quot;plugin&quot;: [
+  &quot;./plugins/my-plugin.ts&quot;
+]
+</pre>
+
+<div class="gotcha">
+<strong>Plugins exigem restart:</strong> Diferente de algumas configs que hot-reload, plugins s&atilde;o carregados <strong>uma &uacute;nica vez na inicializa&ccedil;&atilde;o</strong>. Qualquer altera&ccedil;&atilde;o no <code>.ts</code> ou no <code>opencode.json</code> requer <strong>restart completo</strong> do opencode para surtir efeito. N&atilde;o adianta salvar o arquivo &mdash; &eacute; necess&aacute;rio reiniciar o processo.
+</div>
+
+<h3>Li&ccedil;&otilde;es pr&aacute;ticas</h3>
+
+<div class="insight">
+<strong>Checklist mental para criar hooks <code>tool.execute.before</code>:</strong>
+<ol>
+  <li>Identifique <strong>qual tool</strong> executa a opera&ccedil;&atilde;o que voc&ecirc; quer interceptar (use a tabela de tools nativas como refer&ecirc;ncia).</li>
+  <li>Descubra <strong>quais argumentos</strong> essa tool aceita &mdash; mutar um campo que ela n&atilde;o l&ecirc; &eacute; in&uacute;til.</li>
+  <li>Filtre com <code>input.tool === &quot;nome&quot;</code> para n&atilde;o afetar outras tools.</li>
+  <li>Adicione <strong>guarda de tipo</strong> em cada campo de <code>output.args</code> antes de mutar.</li>
+  <li>Reinicie o opencode para carregar o plugin atualizado.</li>
+  <li>Teste com um comando simples (ex: <code>echo test</code>) para confirmar que o hook disparou.</li>
+</ol>
+</div>
+
+<div class="tip">
+<strong>Debugging:</strong> Se o plugin n&atilde;o funciona, o diagn&oacute;stico &eacute; simples: (1) verifique se o arquivo existe no caminho declarado, (2) confira se <code>opencode.json</code> &eacute; v&aacute;lido (sem erros de v&iacute;rgula ou chave), (3) reinicie o opencode, (4) execute <code>echo test</code> no terminal &mdash; se a mensagem do plugin n&atilde;o aparecer, o hook n&atilde;o est&aacute; sendo chamado. N&atilde;o h&aacute; log interno de plugin &mdash; a confirma&ccedil;&atilde;o &eacute; a pr&oacute;pria altera&ccedil;&atilde;o no comportamento.
+</div>
+
+</section>
+
+<!-- ============================================================ -->
+<section id="gotchas">
+<h2>9. Pegadinhas / Gotchas</h2>
+
+<div class="gotcha">
+<strong>Top-level mode &ne; AgentConfig.mode</strong><br>
+O schema tem dois campos chamados <code>mode</code>. Um e objeto (<code>mode: { plan: ..., build: ... }</code>) &mdash; deprecated. O outro e enum <code>&quot;subagent&quot;|&quot;primary&quot;|&quot;all&quot;</code> dentro de <code>AgentConfig</code>. O nome igual e coincidencia infeliz.
+</div>
+
+<div class="gotcha">
+<strong>MCP usa <code>environment</code>, nao <code>env</code></strong><br>
+O schema de <code>McpLocalConfig</code> chama o campo de variaveis de ambiente de <code>environment</code>. Copiar de exemplo errado quebra o startup.
+</div>
+
+<div class="gotcha">
+<strong><code>plugin</code> e array, nao objeto</strong><br>
+Diferente de <code>agent</code>, <code>mcp</code> e <code>provider</code> que sao objetos chaveados, <code>plugin</code> e array de strings ou tuplas. Nao da para dar nome nem desabilitar um plugin individual sem remove-lo.
+</div>
+
+<div class="gotcha">
+<strong>Permissao: ultima regra vence, nao primeira</strong><br>
+Diferente do que a intui&ccedil;&atilde;o sugere, a <strong>ultima</strong> regra que match define a permissao. Coloque o catch-all <code>&quot;*&quot;</code> <strong>primeiro</strong> e as regras especificas depois.
+</div>
+
+<div class="gotcha">
+<strong><code>AgentConfig.options</code> aceita <strong>qualquer</strong> coisa</strong><br>
+O schema define <code>&quot;options&quot;: { &quot;type&quot;: &quot;object&quot; }</code> sem <code>additionalProperties: false</code>. Qualquer chave extra desconhecida no frontmatter de um agente .md e roteada para <code>options</code>.
+</div>
+
+<div class="gotcha">
+<strong><code>tools</code> dentro de AgentConfig e deprecated</strong><br>
+O schema tem <code>&quot;tools&quot;: { &quot;type&quot;: &quot;object&quot;, &quot;additionalProperties&quot;: { &quot;type&quot;: &quot;boolean&quot; } }</code> mas a descri&ccedil;&atilde;o diz <code>@deprecated Use &apos;permission&apos; field instead</code>.
+</div>
+
+<div class="gotcha">
+<strong><code>additionalProperties: false</code> na raiz</strong><br>
+O <code>Config</code> top-level tem <code>additionalProperties: false</code>. Qualquer chave nao listada causa <code>ConfigInvalidError</code>. Typos como <code>&quot;defalt_agent&quot;</code> (vs <code>&quot;default_agent&quot;</code>) quebram o startup.
+</div>
+
+<div class="gotcha">
+<strong><code>model</code> sempre com provider prefix</strong><br>
+O formato esperado na pratica e <code>&quot;provider/model-id&quot;</code>. Ex: <code>&quot;anthropic/claude-sonnet-4-6&quot;</code>. Sem o prefixo, o runtime nao sabe qual provider usar.
+</div>
+
+<div class="gotcha">
+<strong>Config nao hot-reload</strong><br>
+Mudancas no <code>opencode.json</code> so valem depois de reiniciar o opencode. A sessao ativa mantem a config que foi carregada no startup.
+</div>
+</section>
+
+<!-- ============================================================ -->
+<section id="glossary">
+<h2>10. Glossario rapido</h2>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Termo</th><th>O que significa no mundo opencode</th></tr></thead>
+<tbody>
+<tr><td class="gloss-term"><code>$schema</code></td><td>Declara qual schema valida este JSON. Conven&ccedil;&atilde;o JSON Schema, nao runtime.</td></tr>
+<tr><td class="gloss-term"><code>$defs</code></td><td>Bloco de defini&ccedil;&otilde;es de tipos reutilizaveis. Equivalente a declarar interfaces no topo do arquivo.</td></tr>
+<tr><td class="gloss-term"><code>$ref</code></td><td>Referencia a uma defini&ccedil;&atilde;o. <code>&quot;$ref&quot;: &quot;#/$defs/X&quot;</code> e como <code>X</code> em TypeScript.</td></tr>
+<tr><td class="gloss-term">Config instance</td><td>O JSON que voce escreve no <code>opencode.json</code> ou nos arquivos de agente.</td></tr>
+<tr><td class="gloss-term">Schema</td><td>O contrato de valida&ccedil;&atilde;o em <code>https://opencode.ai/config.json</code>.</td></tr>
+<tr><td class="gloss-term">Runtime</td><td>O motor que executa o comportamento lendo a config. Nao e schema.</td></tr>
+<tr><td class="gloss-term">Agent</td><td>Entidade que pode conversar, executar tools e delegar tarefas.</td></tr>
+<tr><td class="gloss-term">AgentConfig.mode</td><td>Papel do agente: <code>subagent</code> (chamavel), <code>primary</code> (entrada de chat), <code>all</code> (ambos).</td></tr>
+<tr><td class="gloss-term">Plugin</td><td>Codigo (npm ou local) que se conecta ao motor via hooks.</td></tr>
+<tr><td class="gloss-term">Hook</td><td>Ponto de extensao no ciclo de vida: antes/depois de tool, antes de comando, etc.</td></tr>
+<tr><td class="gloss-term">MCP</td><td>Model Context Protocol &mdash; servidor que expoe tools para o modelo.</td></tr>
+<tr><td class="gloss-term">Permission</td><td>Controle de acesso a tools. Forma: a&ccedil;&atilde;o direta ou objeto de padroes.</td></tr>
+<tr><td class="gloss-term">Command</td><td>Comando slash customizavel (<code>/deploy</code>) que vira um template de prompt.</td></tr>
+<tr><td class="gloss-term">Provider</td><td>Servico de API de LLM (Anthropic, OpenAI, etc.).</td></tr>
+<tr><td class="gloss-term">Skill</td><td>Instru&ccedil;&atilde;o markdown carregada dinamicamente.</td></tr>
+<tr><td class="gloss-term">Primary tool</td><td>Tool restrita a agentes primarios (config em <code>experimental.primary_tools</code>).</td></tr>
+<tr><td class="gloss-term">Compaction</td><td>Mecanismo de compressao de contexto quando o limite de tokens e atingido.</td></tr>
+<tr><td class="gloss-term"><code>anyOf</code></td><td>Uni&atilde;o permissiva: pelo menos um deve casar. Equivale a <code>A | B</code> em TS.</td></tr>
+<tr><td class="gloss-term"><code>oneOf</code></td><td>Uni&atilde;o exclusiva: exatamente um deve casar. Mais restrito que <code>|</code>.</td></tr>
+<tr><td class="gloss-term"><code>allOf</code></td><td>Intersec&ccedil;&atilde;o: todos devem casar. Equivale a <code>A &amp; B</code>.</td></tr>
+<tr><td class="gloss-term"><code>enum</code></td><td>Literal union: <code>&quot;subagent&quot; | &quot;primary&quot; | &quot;all&quot;</code>.</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<hr>
+
+<p style="text-align:center;color:var(--text-dim);font-size:.8rem;">
+  opencode config schema cheat sheet &bull; auto-contido &bull; baseado em <code>https://opencode.ai/config.json</code>
+</p>
+
+<script>
+document.querySelectorAll("pre").forEach(function(el) {
+  var btn = document.createElement("button");
+  btn.className = "copy-btn";
+  btn.textContent = "ðŸ“‹ copy";
+  btn.addEventListener("click", function() {
+    var txt = el.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function() {
+        el.classList.add("copied");
+        setTimeout(function() { el.classList.remove("copied"); }, 2000);
+      }).catch(function() { fallbackCopy(txt, el); });
+    } else {
+      fallbackCopy(txt, el);
+    }
+  });
+  el.appendChild(btn);
+});
+function fallbackCopy(txt, pre) {
+  var ta = document.createElement("textarea");
+  ta.value = txt;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    pre.classList.add("copied");
+    setTimeout(function() { pre.classList.remove("copied"); }, 2000);
+  } catch(e) {}
+  document.body.removeChild(ta);
+}
+</script>
+
+</body>
+</html>
