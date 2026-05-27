@@ -1,451 +1,563 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Runtime do Opencode — Documentação</title>
-<style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-  html{font-size:16px;scroll-behavior:smooth;}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.7;-webkit-font-smoothing:antialiased;}
-  ::-webkit-scrollbar{width:8px;}
-  ::-webkit-scrollbar-track{background:#0d1117;}
-  ::-webkit-scrollbar-thumb{background:#30363d;border-radius:4px;}
-  .page-wrapper{display:flex;max-width:1200px;margin:0 auto;padding:0;min-height:100vh;}
-  .sidebar{width:260px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:2rem 1rem 2rem 0;border-right:1px solid #21262d;}
-  .sidebar-logo{font-size:1.1rem;font-weight:700;color:#58a6ff;margin-bottom:0.25rem;letter-spacing:-0.02em;}
-  .sidebar-sub{font-size:0.75rem;color:#8b949e;margin-bottom:1.5rem;}
-  .toc{list-style:none;}
-  .toc li{margin-bottom:0.25rem;}
-  .toc a{display:block;padding:0.3rem 0.75rem;color:#8b949e;text-decoration:none;font-size:0.85rem;border-radius:6px;transition:all 0.15s;line-height:1.4;}
-  .toc a:hover{color:#e6edf3;background:#161b22;}
-  .toc a.active{color:#58a6ff;background:#1c2336;font-weight:500;}
-  .toc .toc-h2{padding-left:1.5rem;font-size:0.8rem;}
-  .main-content{flex:1;min-width:0;padding:2.5rem 3rem 4rem;max-width:860px;}
-  h1{font-size:2.2rem;font-weight:700;color:#f0f6fc;letter-spacing:-0.03em;line-height:1.2;margin-bottom:0.5rem;}
-  h1+.lead{font-size:1.1rem;color:#8b949e;margin-bottom:2rem;line-height:1.6;}
-  h2{font-size:1.5rem;font-weight:600;color:#f0f6fc;margin-top:2.5rem;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid #21262d;letter-spacing:-0.02em;line-height:1.3;}
-  h3{font-size:1.15rem;font-weight:600;color:#e6edf3;margin-top:1.75rem;margin-bottom:0.5rem;line-height:1.4;}
-  h4{font-size:1rem;font-weight:600;color:#d2d8e0;margin-top:1.25rem;margin-bottom:0.4rem;}
-  p{margin-bottom:1rem;color:#d2d8e0;}
-  a{color:#58a6ff;text-decoration:none;}
-  a:hover{text-decoration:underline;}
-  strong{color:#e6edf3;font-weight:600;}
-  code{font-family:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:0.85em;background:#161b22;color:#f0f6fc;padding:0.15em 0.4em;border-radius:4px;border:1px solid #21262d;}
-  .lead{font-size:1.1rem;color:#8b949e;margin-bottom:2rem;}
-  .section-anchor{scroll-margin-top:1.5rem;}
-  .diagram-wrapper{background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:1rem;margin:1.5rem 0;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .diagram-wrapper svg{display:block;width:100%;height:auto;max-width:900px;margin:0 auto;}
-  .diagram-caption{text-align:center;font-size:0.8rem;color:#8b949e;margin-top:0.5rem;}
-  .callout{border-radius:8px;padding:1rem 1.25rem;margin:1.25rem 0;border-left:4px solid;font-size:0.9rem;}
-  .callout-title{font-weight:600;margin-bottom:0.3rem;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.04em;}
-  .callout-info{background:#0d1f3c;border-color:#58a6ff;color:#c9d1d9;}
-  .callout-info .callout-title{color:#58a6ff;}
-  .callout-warning{background:#2d1f00;border-color:#d29922;color:#c9d1d9;}
-  .callout-warning .callout-title{color:#d29922;}
-  .callout-danger{background:#2d1515;border-color:#f85149;color:#c9d1d9;}
-  .callout-danger .callout-title{color:#f85149;}
-  .callout-success{background:#0d3d1a;border-color:#3fb950;color:#c9d1d9;}
-  .callout-success .callout-title{color:#3fb950;}
-  .callout p:last-child{margin-bottom:0;}
-  .table-wrapper{overflow-x:auto;margin:1.25rem 0;}
-  table{width:100%;border-collapse:collapse;font-size:0.9rem;}
-  thead th{background:#161b22;color:#e6edf3;font-weight:600;text-align:left;padding:0.65rem 0.85rem;border-bottom:2px solid #30363d;white-space:nowrap;}
-  tbody td{padding:0.55rem 0.85rem;border-bottom:1px solid #21262d;color:#d2d8e0;vertical-align:top;}
-  tbody tr:hover td{background:#161b22;}
-  .code-block-wrapper{position:relative;margin:1.25rem 0;border-radius:8px;background:#161b22;border:1px solid #30363d;overflow:hidden;}
-  .code-block-header{display:flex;justify-content:space-between;align-items:center;padding:0.4rem 1rem;background:#1c2336;border-bottom:1px solid #30363d;font-size:0.75rem;color:#8b949e;}
-  .code-block-lang{font-weight:500;text-transform:uppercase;letter-spacing:0.04em;}
-  .copy-btn{background:none;border:1px solid #30363d;color:#8b949e;padding:0.2rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.75rem;font-family:inherit;transition:all 0.15s;display:inline-flex;align-items:center;gap:0.3rem;}
-  .copy-btn:hover{background:#30363d;color:#e6edf3;border-color:#484f58;}
-  .copy-btn.copied{background:#0d3d1a;border-color:#3fb950;color:#3fb950;}
-  .copy-btn svg{width:14px;height:14px;fill:currentColor;}
-  pre{margin:0;padding:1rem 1rem;overflow-x:auto;font-family:"SF Mono","Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:0.82rem;line-height:1.6;color:#e6edf3;tab-size:2;}
-  .tag{display:inline-block;padding:0.1rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:600;letter-spacing:0.02em;}
-  .tag-blue{background:#1c2336;color:#58a6ff;border:1px solid #58a6ff;}
-  .tag-green{background:#0d3d1a;color:#3fb950;border:1px solid #3fb950;}
-  .tag-red{background:#2d1515;color:#f85149;border:1px solid #f85149;}
-  .tag-yellow{background:#2d1f00;color:#d29922;border:1px solid #d29922;}
-  .tag-purple{background:#1a233d;color:#bc8cff;border:1px solid #bc8cff;}
-  .flow-step{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:1.25rem 1.5rem;margin:1rem 0;transition:border-color 0.15s;}
-  .flow-step:hover{border-color:#484f58;}
-  .flow-step .step-head{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;}
-  .flow-step .step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-weight:700;font-size:0.85rem;flex-shrink:0;}
-  .flow-step .step-title{font-size:1.05rem;font-weight:600;color:#e6edf3;}
-  .flow-step p{font-size:0.9rem;color:#8b949e;margin-bottom:0;}
-  .step-arrow{text-align:center;color:#30363d;font-size:1.2rem;line-height:1;padding:0.15rem 0;}
-  .glossary-term{display:flex;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid #21262d;}
-  .glossary-term:last-child{border-bottom:none;}
-  .glossary-term dt{font-weight:600;color:#58a6ff;min-width:90px;flex-shrink:0;font-size:0.9rem;}
-  .glossary-term dd{color:#8b949e;font-size:0.9rem;margin:0;}
-  .badge{display:inline-block;padding:0.15rem 0.55rem;border-radius:12px;font-size:0.7rem;font-weight:600;letter-spacing:0.02em;background:#1c2336;color:#8b949e;border:1px solid #30363d;}
-  .badge-blue{background:#0d1f3c;color:#58a6ff;border-color:#58a6ff;}
-  .badge-green{background:#0d3d1a;color:#3fb950;border-color:#3fb950;}
-  hr{border:none;border-top:1px solid #21262d;margin:2rem 0;}
-  .doc-footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid #21262d;text-align:center;font-size:0.8rem;color:#30363d;}
-  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin:1.25rem 0;}
-  .grid-3 .card{background:var(--card-bg,#0d3d1a);border:1px solid var(--card-border,#3fb950);border-radius:8px;padding:1rem;}
-  .grid-3 .card-title{font-weight:600;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.4rem;}
-  .grid-3 .card p{font-size:0.85rem;color:#8b949e;margin:0;}
-  .flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
-  .flow-grid .flow-step{margin:0;}
-  .flow-grid .flow-step .step-num{width:24px;height:24px;font-size:0.75rem;}
-  .flow-grid .flow-step .step-title{font-size:0.95rem;}
-  .flow-grid .flow-step p{font-size:0.85rem;}
-  @media(max-width:900px){
-    .page-wrapper{flex-direction:column;}
-    .sidebar{width:100%;height:auto;position:static;border-right:none;border-bottom:1px solid #21262d;padding:1rem 1.25rem;overflow-y:visible;}
-    .sidebar-logo{font-size:1rem;}
-    .sidebar-sub{margin-bottom:0.75rem;}
-    .toc{display:flex;flex-wrap:wrap;gap:0.25rem;}
-    .toc li{margin-bottom:0;}
-    .toc a{padding:0.2rem 0.5rem;font-size:0.8rem;}
-    .toc .toc-h2{padding-left:0;}
-    .main-content{padding:1.5rem 1.25rem 3rem;}
-    h1{font-size:1.6rem;}
-    h2{font-size:1.25rem;}
-    .flow-step{padding:1rem 1.1rem;}
-    .flow-grid{grid-template-columns:1fr;}
-  }
-  @media(max-width:480px){
-    .main-content{padding:1rem 1rem 2rem;}
-    h1{font-size:1.35rem;}
-    h2{font-size:1.1rem;}
-    .flow-step .step-head{gap:0.5rem;}
-    .flow-step .step-num{width:24px;height:24px;font-size:0.75rem;}
-    .flow-step .step-title{font-size:0.95rem;}
-    pre{font-size:0.75rem;padding:0.75rem;}
-    .diagram-wrapper{padding:0.5rem;margin:1rem 0;}
-    .glossary-term{flex-direction:column;gap:0.2rem;}
-    .glossary-term dt{min-width:auto;}
-  }
-</style>
-</head>
-<body>
-<div class="page-wrapper">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Centro de documentação pessoal — artigos técnicos sobre agentes de IA, ferramentas de desenvolvimento e arquitetura de software."
+    />
+    <title>Centro de Documentação</title>
 
-<nav class="sidebar" aria-label="Índice">
-  <div class="sidebar-logo">Opencode</div>
-  <div class="sidebar-sub">Runtime &amp; Arquitetura</div>
-  <ul class="toc">
-    <li><a href="#visao-geral" class="active">Visão Geral</a></li>
-    <li><a href="#diagrama">Diagrama do Runtime</a></li>
-    <li><a href="#fluxo">Fluxo de Execução</a></li>
-    <li><a href="#etapa-1" class="toc-h2">1. Usuário · Prompt</a></li>
-    <li><a href="#etapa-2" class="toc-h2">2. Roteamento</a></li>
-    <li><a href="#etapa-3" class="toc-h2">3. Agent Loop</a></li>
-    <li><a href="#etapa-4" class="toc-h2">4. Output · Resposta</a></li>
-    <li><a href="#hooks">Plugin Hooks</a></li>
-    <li><a href="#configuracao">Configuração</a></li>
-    <li><a href="#exemplos">Exemplos de Uso</a></li>
-    <li><a href="#glossario">Glossário</a></li>
-  </ul>
-</nav>
-<main class="main-content">
-  <h1>Runtime do Opencode</h1>
-  <p class="lead">Ciclo de vida de uma requisição: prompt → agente → tools → resposta. Documentação do motor de execução, roteamento, plugin hooks e fluxo de tool calling.</p>
-  <section id="visao-geral" class="section-anchor">
-    <h2>Visão Geral</h2>
-    <p>O <strong>Opencode</strong> é um runtime para agentes de IA que orquestra o ciclo completo de uma requisição: desde o prompt do usuário até a execução de ferramentas e o retorno da resposta. O sistema é dividido em três camadas principais:</p>
-    <div class="grid-3">
-      <div class="card" style="--card-bg:#0d3d1a;--card-border:#3fb950;"><div class="card-title" style="color:#3fb950;">Config</div><p>JSON que o usuário escreve (<code>opencode.json</code>, frontmatter <code>.md</code>)</p></div>
-      <div class="card" style="--card-bg:#3d1f00;--card-border:#d4760a;"><div class="card-title" style="color:#d4760a;">Schema</div><p>Contrato de validação — JSON Schema em <code>opencode.ai/config.json</code></p></div>
-      <div class="card" style="--card-bg:#1a233d;--card-border:#bc8cff;"><div class="card-title" style="color:#bc8cff;">Runtime</div><p>Motor que executa o comportamento baseado na config + schema</p></div>
-    </div>
-  </section>
-  <section id="diagrama" class="section-anchor">
-    <h2>Diagrama do Runtime</h2>
-    <p>O diagrama abaixo ilustra o fluxo completo de uma requisição, desde o prompt do usuário até a resposta final, incluindo o loop de agente com tool calling, hooks de plugin e verificações de permissão.</p>
-    <div class="diagram-wrapper">
-      <object data="opencode-runtime.svg" type="image/svg+xml" aria-label="Diagrama do Runtime do Opencode">
-        <img src="opencode-runtime.svg" alt="Diagrama do Runtime do Opencode" style="width:100%;height:auto;">
-      </object>
-    </div>
-    <p class="diagram-caption">Diagrama auto-contido do runtime — fluxo principal (setas azuis) e iterações do agent loop (tracejado).</p>
-    <div class="callout callout-info">
-      <div class="callout-title">Navegação Visual</div>
-      <p>O SVG é interativo em navegadores modernos. As cores seguem o sistema de design do Opencode: <span class="tag tag-blue">azul</span> para estados do sistema, <span class="tag tag-green">verde</span> para plugins, <span class="tag tag-red">vermelho</span> para tools nativas, <span class="tag tag-yellow">amarelo</span> para roteamento.</p>
-    </div>
-  </section>
-  <section id="fluxo" class="section-anchor">
-    <h2>Fluxo de Execução</h2>
-    <p>O runtime executa em 4 etapas principais. Cada etapa é detalhada abaixo com seus componentes e responsabilidades.</p>
-    <div id="etapa-1" class="section-anchor flow-step">
-      <div class="step-head">
-        <span class="step-num" style="background:#1c2336;color:#58a6ff;border:2px solid #58a6ff;">1</span>
-        <span class="step-title">Usuário · Prompt</span>
-        <span class="badge badge-blue">entrada</span>
-      </div>
-      <p>O usuário envia uma mensagem de texto para o sistema. A mensagem pode incluir um <strong>@-mention</strong> para direcionar a um agente específico. O prompt bruto é recebido pelo router, que decide qual configuração de agente será usada.</p>
-      <div style="margin-top:0.75rem;font-size:0.85rem;color:#8b949e;"><strong>Formato típico:</strong> <code>@agent-nome faça X</code> ou mensagem direta para o agente padrão.</div>
-    </div>
-    <div class="step-arrow">▾</div>
-    <div id="etapa-2" class="section-anchor flow-step">
-      <div class="step-head">
-        <span class="step-num" style="background:#2d1f00;color:#d29922;border:2px solid #d29922;">2</span>
-        <span class="step-title">Roteamento</span>
-        <span class="badge badge-blue">router</span>
-      </div>
-      <p>O <strong>Router</strong> lê a configuração <code>default_agent</code> ou o @-mention para selecionar o <code>AgentConfig</code> e o system prompt correspondente. É aqui que o sistema decide <em>qual</em> agente executará a requisição.</p>
-      <div class="table-wrapper" style="margin-top:0.75rem;">
-        <table>
-          <thead><tr><th>Campo</th><th>Descrição</th></tr></thead>
-          <tbody>
-            <tr><td><code>default_agent</code></td><td>Agente usado quando nenhum @-mention é fornecido</td></tr>
-            <tr><td><code>agents</code></td><td>Mapa de nomes para configurações de agente</td></tr>
-            <tr><td><code>system_prompt</code></td><td>Prompt de sistema específico do agente selecionado</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="step-arrow">▾</div>
-    <div id="etapa-3" class="section-anchor">
-      <h3 style="margin-top:0;">3. Agent Loop (LLM + Tool Calling)</h3>
-      <p>O coração do runtime. O agente entra em um loop iterativo que processa a requisição até obter uma resposta final ou atingir o limite de steps. Cada iteração compreende:</p>
-      <div class="flow-grid">
-        <div class="flow-step">
-          <div class="step-head">
-            <span class="step-num" style="background:#1c2336;color:#58a6ff;border:2px solid #58a6ff;">a</span>
-            <span class="step-title">LLM · Think</span>
-          </div>
-          <p>Modelo processa contexto + prompt e decide o próximo passo.</p>
-        </div>
-        <div class="flow-step">
-          <div class="step-head">
-            <span class="step-num" style="background:#2d1f00;color:#d29922;border:2px solid #d29922;">b</span>
-            <span class="step-title">Decide · Tool Call?</span>
-          </div>
-          <p>Modelo escolhe tool e argumentos, ou produz resposta final.</p>
-        </div>
-        <div class="flow-step">
-          <div class="step-head">
-            <span class="step-num" style="background:#0d3d1a;color:#3fb950;border:2px solid #3fb950;">c</span>
-            <span class="step-title">Plugin Hooks</span>
-          </div>
-          <p><code>tool.execute.before</code> e <code>tool.execute.after</code> são disparados.</p>
-        </div>
-        <div class="flow-step">
-          <div class="step-head">
-            <span class="step-num" style="background:#2d1515;color:#f85149;border:2px solid #f85149;">d</span>
-            <span class="step-title">Tool Execution</span>
-          </div>
-          <p><code>read · edit · bash · glob · grep</code> — com permissão allow/ask/deny.</p>
-        </div>
-      </div>
-      <div class="callout callout-warning">
-        <div class="callout-title">Limite de Iterações</div>
-        <p>O agent loop possui um limite máximo de steps configurável. Quando atingido, a resposta parcial é retornada com um aviso. Isso evita loops infinitos em casos de tool calling mal-sucedido.</p>
-      </div>
-    </div>
-    <div class="step-arrow">▾</div>
-    <div id="etapa-4" class="section-anchor flow-step">
-      <div class="step-head">
-        <span class="step-num" style="background:#0d3d1a;color:#3fb950;border:2px solid #3fb950;">4</span>
-        <span class="step-title">Output · Resposta</span>
-        <span class="badge badge-green">saída</span>
-      </div>
-      <p>A resposta do modelo é combinada com os resultados das tools executadas e exibida no chat para o usuário. O ciclo se encerra aqui — ou recomeça com um novo prompt.</p>
-    </div>
-  </section>
-  <section id="hooks" class="section-anchor">
-    <h2>Plugin Hooks</h2>
-    <p>O sistema de plugins do Opencode permite interceptar a execução de tools através de hooks. Cada plugin pode registrar callbacks para <strong>antes</strong> e <strong>depois</strong> da execução de qualquer tool.</p>
-    <div class="table-wrapper">
-      <table>
-        <thead><tr><th>Hook</th><th>Momento</th><th>Input</th><th>Mutável?</th></tr></thead>
-        <tbody>
-          <tr><td><code>tool.execute.before</code></td><td>Antes da tool rodar</td><td><code>{ tool, args }</code></td><td>❌ Somente-leitura</td></tr>
-          <tr><td><code>tool.execute.after</code></td><td>Depois da tool rodar</td><td><code>{ tool, args, result }</code></td><td>✅ args mutável in-place</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="callout callout-success">
-      <div class="callout-title">Exemplo: MyPlugin</div>
-      <p>O hook <code>tool.execute.before</code> pode injetar <code>"echo [MyPlugin] plugin ativo &&"</code> em <code>output.args.command</code> do bash, permitindo log automatizado de toda execução.</p>
-    </div>
-    <div class="code-block-wrapper">
-      <div class="code-block-header">
-        <span class="code-block-lang">TypeScript</span>
-        <button class="copy-btn" onclick="copyCode(this)">
-          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          Copiar
-        </button>
-      </div>
-      <pre><code>// Registrar hook antes da execução da tool
-runtime.on(&quot;tool.execute.before&quot;, (ctx) =&gt; {
-  console.log(`[Plugin] Tool ${ctx.tool} será executada`);
-  if (ctx.tool === &quot;bash&quot;) {
-    ctx.args.command = `echo [MyPlugin] plugin ativo &amp;&amp; ${ctx.args.command}`;
-  }
-});
+    <!-- ── Iconografia: Lucide ───────────────────────────────────────── -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
-// Registrar hook depois da execução
-runtime.on(&quot;tool.execute.after&quot;, (ctx) =&gt; {
-  console.log(`[Plugin] Tool ${ctx.tool} executada em ${ctx.duration}ms`);
-});</code></pre>
-    </div>
-  </section>
+    <!-- ── Estilo: Tailwind CSS (Play CDN) ───────────────────────────── -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <section id="configuracao" class="section-anchor">
-    <h2>Configuração</h2>
-    <p>O runtime é configurado através do arquivo <code>opencode.json</code> na raiz do projeto, ou via frontmatter YAML em arquivos <code>.md</code>.</p>
-    <div class="code-block-wrapper">
-      <div class="code-block-header">
-        <span class="code-block-lang">JSON</span>
-        <button class="copy-btn" onclick="copyCode(this)">
-          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          Copiar
-        </button>
-      </div>
-      <pre><code>{
-  &quot;default_agent&quot;: &quot;assistente&quot;,
-  &quot;agents&quot;: {
-    &quot;assistente&quot;: {
-      &quot;system_prompt&quot;: &quot;Você é um assistente útil.&quot;,
-      &quot;tools&quot;: [&quot;read&quot;, &quot;edit&quot;, &quot;bash&quot;, &quot;glob&quot;, &quot;grep&quot;],
-      &quot;max_steps&quot;: 25,
-      &quot;permission&quot;: &quot;ask&quot;
-    },
-    &quot;dev&quot;: {
-      &quot;system_prompt&quot;: &quot;Você é um engenheiro de software.&quot;,
-      &quot;tools&quot;: [&quot;read&quot;, &quot;edit&quot;, &quot;bash&quot;, &quot;glob&quot;, &quot;grep&quot;],
-      &quot;max_steps&quot;: 50,
-      &quot;permission&quot;: &quot;allow&quot;
-    }
-  },
-  &quot;plugins&quot;: [
-    {
-      &quot;name&quot;: &quot;my-plugin&quot;,
-      &quot;hooks&quot;: [&quot;tool.execute.before&quot;, &quot;tool.execute.after&quot;]
-    }
-  ]
-}</code></pre>
-    </div>
-    <h3>Campos da Configuração</h3>
-    <div class="table-wrapper">
-      <table>
-        <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
-        <tbody>
-          <tr><td><code>default_agent</code></td><td><code>string</code></td><td>Nome do agente padrão</td></tr>
-          <tr><td><code>agents</code></td><td><code>Record&lt;string, AgentConfig&gt;</code></td><td>Mapa de configurações de agente</td></tr>
-          <tr><td><code>agents.*.tools</code></td><td><code>string[]</code></td><td>Lista de tools disponíveis</td></tr>
-          <tr><td><code>agents.*.max_steps</code></td><td><code>number</code></td><td>Limite máximo de iterações do loop</td></tr>
-          <tr><td><code>agents.*.permission</code></td><td><code>&quot;allow&quot; | &quot;ask&quot; | &quot;deny&quot;</code></td><td>Política de permissão para execução de tools</td></tr>
-          <tr><td><code>plugins</code></td><td><code>PluginConfig[]</code></td><td>Lista de plugins registrados</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-  <section id="exemplos" class="section-anchor">
-    <h2>Exemplos de Uso</h2>
-    <h3>Requisição Simples</h3>
-    <p>Enviar um prompt para o agente padrão:</p>
-    <div class="code-block-wrapper">
-      <div class="code-block-header">
-        <span class="code-block-lang">Bash</span>
-        <button class="copy-btn" onclick="copyCode(this)">
-          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          Copiar
-        </button>
-      </div>
-      <pre><code>$ opencode &quot;Explique o conceito de runtime no contexto de agentes de IA&quot;</code></pre>
-    </div>
-    <h3>Requisição com Agente Específico</h3>
-    <p>Usar @-mention para selecionar um agente:</p>
-    <div class="code-block-wrapper">
-      <div class="code-block-header">
-        <span class="code-block-lang">Bash</span>
-        <button class="copy-btn" onclick="copyCode(this)">
-          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          Copiar
-        </button>
-      </div>
-      <pre><code>$ opencode &quot;@dev refatore este módulo para usar async/await&quot;</code></pre>
-    </div>
-    <h3>Plugin Customizado</h3>
-    <p>Registrar um plugin que monitora execuções:</p>
-    <div class="code-block-wrapper">
-      <div class="code-block-header">
-        <span class="code-block-lang">JavaScript</span>
-        <button class="copy-btn" onclick="copyCode(this)">
-          <svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-          Copiar
-        </button>
-      </div>
-      <pre><code>// opencode.config.js
-module.exports = {
-  plugins: [
-    {
-      name: &quot;logger&quot;,
-      hooks: {
-        &quot;tool.execute.before&quot;: (ctx) =&gt; {
-          console.log(`[${new Date().toISOString()}] ${ctx.tool} iniciou`);
+    <!-- ── Tipografia ────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+            },
+            colors: {
+              ink: {
+                900: '#0a0d12',
+                850: '#0d1117',
+                800: '#161b22',
+                750: '#1c2336',
+                700: '#21262d',
+                600: '#30363d',
+                500: '#484f58',
+              },
+              fg: { DEFAULT: '#e6edf3', strong: '#f0f6fc', muted: '#8b949e', dim: '#6e7681' },
+              brand: '#58a6ff',
+              ok: '#3fb950',
+              warn: '#d29922',
+              danger: '#f85149',
+              violet: '#bc8cff',
+            },
+          },
         },
-        &quot;tool.execute.after&quot;: (ctx) =&gt; {
-          console.log(`[${new Date().toISOString()}] ${ctx.tool} finalizou`);
+      };
+    </script>
+
+    <style type="text/tailwindcss">
+      @layer base {
+        html {
+          @apply scroll-smooth;
+        }
+        body {
+          @apply bg-ink-850 font-sans text-fg antialiased;
+          line-height: 1.7;
+        }
+        /* Foco visível global — WCAG 2.2 AA */
+        :focus-visible {
+          outline: 2px solid #58a6ff;
+          outline-offset: 3px;
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar {
+          width: 9px;
+          height: 9px;
+        }
+        ::-webkit-scrollbar-track {
+          @apply bg-ink-850;
+        }
+        ::-webkit-scrollbar-thumb {
+          @apply rounded-full bg-ink-600;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          @apply bg-ink-500;
+        }
+        ::selection {
+          background: rgba(88, 166, 255, 0.3);
         }
       }
-    }
-  ]
-};</code></pre>
-    </div>
-  </section>
-  <section id="glossario" class="section-anchor">
-    <h2>Glossário do Runtime</h2>
-    <p>Termos e definições essenciais para entender a arquitetura do Opencode.</p>
-    <dl style="margin-top:1rem;">
-      <div class="glossary-term"><dt>Config</dt><dd>Arquivo JSON que o usuário escreve para definir agentes, tools, plugins e permissões. Ex: <code>opencode.json</code>, frontmatter <code>.md</code>.</dd></div>
-      <div class="glossary-term"><dt>Schema</dt><dd>Contrato de validação (JSON Schema) que define a estrutura esperada do arquivo de configuração. Publicado em <code>https://opencode.ai/config.json</code>.</dd></div>
-      <div class="glossary-term"><dt>Runtime</dt><dd>Motor que executa o comportamento do sistema baseado na configuração + schema. Gerencia o ciclo de vida da requisição, o agent loop, os hooks e a execução de tools.</dd></div>
-      <div class="glossary-term"><dt>Agent Loop</dt><dd>Loop iterativo onde o modelo LLM processa contexto, decide se chama uma tool ou produz resposta final, e repete até atingir um dos critérios de parada.</dd></div>
-      <div class="glossary-term"><dt>Plugin Hooks</dt><dd>Pontos de extensão que permitem interceptar e modificar o comportamento do runtime antes e depois da execução de tools.</dd></div>
-      <div class="glossary-term"><dt>Tool Calling</dt><dd>Mecanismo pelo qual o modelo LLM solicita a execução de uma ferramenta específica (leitura de arquivo, edição, execução de comando, etc.) e aguarda o resultado para continuar o processamento.</dd></div>
-      <div class="glossary-term"><dt>Permission</dt><dd>Sistema de controle que define se uma tool pode ser executada automaticamente (<code>allow</code>), precisa de confirmação (<code>ask</code>) ou é bloqueada (<code>deny</code>).</dd></div>
-    </dl>
-  </section>
-  <footer class="doc-footer"><p>Opencode Runtime &mdash; Documentação técnica &mdash; Diagrama auto-contido baseado em opencode.ai/config.json</p></footer>
-</main>
-</div>
-<script>
-function copyCode(btn) {
-  var wrapper = btn.closest(".code-block-wrapper");
-  var code = wrapper.querySelector("pre code");
-  var text = code.textContent;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function() {
-      btn.classList.add("copied");
-      var ot = btn.innerHTML;
-      btn.innerHTML = "<svg viewBox=\"0 0 24 24\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z\"/></svg> Copiado";
-      setTimeout(function() { btn.classList.remove("copied"); btn.innerHTML = ot; }, 2000);
-    });
-  } else {
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select(); document.execCommand("copy");
-    document.body.removeChild(ta);
-    btn.classList.add("copied");
-    var ot = btn.innerHTML;
-    btn.innerHTML = "<svg viewBox=\"0 0 24 24\"><path d=\"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z\"/></svg> Copiado";
-    setTimeout(function() { btn.classList.remove("copied"); btn.innerHTML = ot; }, 2000);
-  }
-}
-document.addEventListener("DOMContentLoaded", function() {
-  var links = document.querySelectorAll(".toc a");
-  var secs = [];
-  links.forEach(function(l) {
-    var h = l.getAttribute("href");
-    if (h && h.startsWith("#")) { var s = document.getElementById(h.substring(1)); if (s) secs.push({el:s,link:l}); }
-  });
-  function update() {
-    var sy = window.scrollY + 100;
-    var cur = null;
-    secs.forEach(function(i) { if (i.el.offsetTop <= sy) cur = i; });
-    links.forEach(function(l) { l.classList.remove("active"); });
-    if (cur) cur.link.classList.add("active");
-  }
-  window.addEventListener("scroll", update);
-  update();
-});
-</script>
-</body>
+
+      @layer components {
+        /* Skip link acessibilidade */
+        .skip-link {
+          @apply absolute -top-full left-4 z-[100] rounded-b-md bg-brand px-4 py-2 text-sm font-semibold text-ink-900 transition-[top] focus:top-0;
+        }
+
+        /* Pills / tags */
+        .pill {
+          @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold;
+        }
+        .pill-blue {
+          @apply border-brand/50 bg-brand/10 text-brand;
+        }
+        .pill-green {
+          @apply border-ok/50 bg-ok/10 text-ok;
+        }
+        .pill-violet {
+          @apply border-violet/50 bg-violet/10 text-violet;
+        }
+        .pill-gray {
+          @apply border-ink-600 bg-ink-700/50 text-fg-muted;
+        }
+        .pill-yellow {
+          @apply border-warn/50 bg-warn/10 text-warn;
+        }
+
+        /* Card de documento */
+        .doc-card {
+          @apply relative flex flex-col rounded-xl border border-ink-700 bg-ink-800/60 p-5 transition
+                 hover:border-brand/40 hover:bg-ink-800 hover:shadow-lg hover:shadow-brand/5;
+        }
+        .doc-card:focus-within {
+          @apply border-brand/40;
+        }
+        .doc-card-icon {
+          @apply mb-4 inline-flex h-11 w-11 items-center justify-center rounded-lg border;
+        }
+        .doc-card-title {
+          @apply mb-1.5 text-base font-semibold text-fg-strong;
+        }
+        .doc-card-desc {
+          @apply mb-4 grow text-sm leading-relaxed text-fg-muted;
+        }
+        .doc-card-footer {
+          @apply flex items-center justify-between gap-2;
+        }
+
+        /* Link de card (cobre toda a superfície via pseudo-elemento) */
+        .doc-card-link {
+          @apply font-medium text-brand underline-offset-2 hover:underline focus-visible:underline;
+        }
+        .doc-card-link::after {
+          content: '';
+          @apply absolute inset-0 rounded-xl;
+        }
+
+        /* Cabeçalho de grupo de categoria */
+        .category-heading {
+          @apply mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-fg-dim;
+        }
+        .category-heading::after {
+          content: '';
+          @apply flex-1 border-t border-ink-700;
+        }
+
+        /* Campo de busca */
+        .search-input {
+          @apply w-full rounded-xl border border-ink-600 bg-ink-800 px-4 py-3 pl-11 text-sm text-fg
+                 placeholder-fg-dim outline-none transition
+                 hover:border-ink-500
+                 focus:border-brand focus:ring-1 focus:ring-brand/40;
+        }
+
+        /* Contador de resultados (aria-live) */
+        .result-count {
+          @apply text-xs text-fg-dim;
+        }
+
+        .prose-a {
+          @apply font-medium text-brand underline-offset-2 hover:underline focus-visible:underline;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Skip link: primeiro elemento focável -->
+    <a href="#conteudo-principal" class="skip-link">Ir para o conteúdo</a>
+
+    <!-- ════════════════════════ HEADER ════════════════════════ -->
+    <header
+      role="banner"
+      class="sticky top-0 z-40 border-b border-ink-700 bg-ink-850/85 backdrop-blur supports-[backdrop-filter]:bg-ink-850/70"
+    >
+      <div class="mx-auto flex h-16 max-w-5xl items-center gap-3 px-5">
+        <!-- Logo / identidade -->
+        <a href="#topo" class="flex items-center gap-2.5" aria-label="Centro de Documentação — início da página">
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-violet text-ink-900"
+            aria-hidden="true"
+          >
+            <i data-lucide="library" class="ic h-5 w-5"></i>
+          </span>
+          <span class="text-[1.05rem] font-bold tracking-tight text-fg-strong">Centro de Documentação</span>
+        </a>
+
+        <!-- Contagem de docs (atualizada pelo filtro) -->
+        <span
+          id="header-count"
+          class="hidden items-center gap-1.5 rounded-full border border-ink-700 bg-ink-800 px-2.5 py-0.5 font-mono text-xs text-fg-muted sm:inline-flex"
+          aria-hidden="true"
+        >
+          <i data-lucide="file-text" class="ic h-3 w-3"></i>
+          <span id="header-count-num">2</span> docs
+        </span>
+      </div>
+    </header>
+
+    <!-- ════════════════════════ MAIN ════════════════════════ -->
+    <main id="conteudo-principal" tabindex="-1" class="mx-auto max-w-5xl px-5 py-12 sm:px-8">
+
+      <!-- HERO -->
+      <section aria-labelledby="hero-h1" class="mb-12">
+        <div id="topo" class="mb-2 flex flex-wrap items-center gap-2">
+          <span class="pill pill-blue">
+            <i data-lucide="sparkles" class="ic h-3 w-3" aria-hidden="true"></i>
+            Documentação pessoal
+          </span>
+          <span class="pill pill-gray">Self-contained · Sem build</span>
+        </div>
+        <h1 id="hero-h1" class="text-3xl font-extrabold tracking-tight text-fg-strong sm:text-4xl">
+          Centro de Documentação
+        </h1>
+        <p class="mt-3 max-w-2xl text-lg leading-relaxed text-fg-muted">
+          Artigos técnicos sobre agentes de IA, ferramentas de desenvolvimento e arquitetura de software —
+          organizados para leitura rápida e fácil compartilhamento.
+        </p>
+      </section>
+
+      <!-- BUSCA -->
+      <section aria-labelledby="busca-label" class="mb-10">
+        <div class="relative">
+          <label id="busca-label" for="search" class="sr-only">Buscar documentos por título, descrição ou categoria</label>
+          <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-fg-dim" aria-hidden="true">
+            <i data-lucide="search" class="ic h-4 w-4"></i>
+          </span>
+          <input
+            type="search"
+            id="search"
+            class="search-input"
+            placeholder="Buscar por título, descrição ou categoria…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <!-- Resultado de busca: aria-live para leitores de tela -->
+        <p
+          id="result-count"
+          class="result-count mt-2.5 px-1"
+          aria-live="polite"
+          aria-atomic="true"
+        ></p>
+      </section>
+
+      <!-- GRADE DE DOCUMENTOS -->
+      <div id="docs-container" class="space-y-10">
+
+        <!-- ── CATEGORIA: Ferramentas / OpenCode ───────────────────────── -->
+        <section aria-labelledby="cat-opencode" data-category="Ferramentas / OpenCode">
+          <h2 id="cat-opencode" class="category-heading">
+            <i data-lucide="wrench" class="ic h-3.5 w-3.5" aria-hidden="true"></i>
+            Ferramentas / OpenCode
+          </h2>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+
+            <!-- CARD: OpenCode Documentação Técnica -->
+            <article
+              class="doc-card"
+              role="listitem"
+              data-title="OpenCode — Documentação Técnica"
+              data-desc="Referência completa: instalação, configuração, agentes, MCP, hooks, CLI."
+              data-category="Ferramentas / OpenCode"
+              data-tags="opencode instalação configuração agentes mcp hooks cli terminal"
+            >
+              <div
+                class="doc-card-icon border-brand/30 bg-brand/10 text-brand"
+                aria-hidden="true"
+              >
+                <i data-lucide="terminal" class="ic h-5 w-5"></i>
+              </div>
+              <h3 class="doc-card-title">OpenCode — Documentação Técnica</h3>
+              <p class="doc-card-desc">
+                Referência completa: instalação, configuração, agentes, MCP, hooks, CLI e permissões.
+              </p>
+              <div class="doc-card-footer">
+                <span class="pill pill-blue">
+                  <i data-lucide="wrench" class="ic h-3 w-3" aria-hidden="true"></i>
+                  Ferramentas
+                </span>
+                <a
+                  href="opencode.html"
+                  class="doc-card-link inline-flex items-center gap-1 text-sm"
+                  aria-label="Abrir OpenCode — Documentação Técnica"
+                >
+                  Abrir <i data-lucide="arrow-right" class="ic h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+              </div>
+            </article>
+
+            <!--
+            ╔══════════════════════════════════════════════════════════════╗
+            ║  TEMPLATE DE CARD — copie e cole aqui para adicionar um doc  ║
+            ╠══════════════════════════════════════════════════════════════╣
+            ║  Campos a preencher:                                         ║
+            ║  • data-title     — título exato do documento                ║
+            ║  • data-desc      — descrição curta (1 linha)                ║
+            ║  • data-category  — categoria do <section> pai               ║
+            ║  • data-tags      — palavras-chave em minúsculo separadas    ║
+            ║                     por espaço (usadas pelo filtro de busca) ║
+            ║  • Ícone Lucide   — escolha em lucide.dev                    ║
+            ║  • Cor do ícone   — use as classes de paleta (pill-blue,     ║
+            ║                     pill-green, pill-violet, pill-yellow)    ║
+            ║  • href           — caminho relativo pro arquivo .html        ║
+            ║  • aria-label     — "Abrir <título do documento>"            ║
+            ╚══════════════════════════════════════════════════════════════╝
+
+            <article
+              class="doc-card"
+              role="listitem"
+              data-title="TÍTULO DO DOCUMENTO"
+              data-desc="Descrição de uma linha para o filtro de busca."
+              data-category="NOME DA CATEGORIA"
+              data-tags="palavra-chave-1 palavra-chave-2 palavra-chave-3"
+            >
+              <div
+                class="doc-card-icon border-brand/30 bg-brand/10 text-brand"
+                aria-hidden="true"
+              >
+                <i data-lucide="NOME-DO-ÍCONE" class="ic h-5 w-5"></i>
+              </div>
+              <h3 class="doc-card-title">TÍTULO DO DOCUMENTO</h3>
+              <p class="doc-card-desc">
+                Descrição exibida no card — pode ser mais longa que data-desc.
+              </p>
+              <div class="doc-card-footer">
+                <span class="pill pill-blue">
+                  <i data-lucide="tag" class="ic h-3 w-3" aria-hidden="true"></i>
+                  CATEGORIA
+                </span>
+                <a
+                  href="NOME-DO-ARQUIVO.html"
+                  class="doc-card-link inline-flex items-center gap-1 text-sm"
+                  aria-label="Abrir TÍTULO DO DOCUMENTO"
+                >
+                  Abrir <i data-lucide="arrow-right" class="ic h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+              </div>
+            </article>
+            -->
+
+          </div>
+        </section>
+
+        <!-- ── CATEGORIA: Agentes de IA / Arquitetura ──────────────────── -->
+        <section aria-labelledby="cat-agentes" data-category="Agentes de IA / Arquitetura">
+          <h2 id="cat-agentes" class="category-heading">
+            <i data-lucide="cpu" class="ic h-3.5 w-3.5" aria-hidden="true"></i>
+            Agentes de IA / Arquitetura
+          </h2>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+
+            <!-- CARD: Onde os agentes guardam memória -->
+            <article
+              class="doc-card"
+              role="listitem"
+              data-title="Onde os agentes guardam memória"
+              data-desc="Como agentes de IA persistem sessão em disco: event log vs document store."
+              data-category="Agentes de IA / Arquitetura"
+              data-tags="agentes ia persistência sessão memória event log document store jsonl claude opencode codex hermes"
+            >
+              <div
+                class="doc-card-icon border-violet/30 bg-violet/10 text-violet"
+                aria-hidden="true"
+              >
+                <i data-lucide="hard-drive" class="ic h-5 w-5"></i>
+              </div>
+              <h3 class="doc-card-title">Onde os agentes guardam memória</h3>
+              <p class="doc-card-desc">
+                Como agentes de IA (Claude Code, OpenCode, Codex, Hermes) persistem sessão em disco —
+                duas filosofias: event log append-only vs document store normalizado.
+              </p>
+              <div class="doc-card-footer">
+                <span class="pill pill-violet">
+                  <i data-lucide="cpu" class="ic h-3 w-3" aria-hidden="true"></i>
+                  Arquitetura
+                </span>
+                <a
+                  href="agent-persistence.html"
+                  class="doc-card-link inline-flex items-center gap-1 text-sm"
+                  aria-label="Abrir Onde os agentes guardam memória"
+                >
+                  Abrir <i data-lucide="arrow-right" class="ic h-3.5 w-3.5" aria-hidden="true"></i>
+                </a>
+              </div>
+            </article>
+
+          </div>
+        </section>
+
+      </div><!-- /docs-container -->
+
+      <!-- Estado vazio (busca sem resultados) -->
+      <div
+        id="empty-state"
+        class="hidden py-20 text-center"
+        role="status"
+        aria-live="polite"
+      >
+        <span
+          class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-ink-700 bg-ink-800 text-fg-dim"
+          aria-hidden="true"
+        >
+          <i data-lucide="search-x" class="ic h-7 w-7"></i>
+        </span>
+        <p class="text-fg-muted">Nenhum documento encontrado para <strong id="empty-term" class="text-fg"></strong>.</p>
+        <button
+          id="clear-search"
+          class="mt-4 inline-flex items-center gap-1.5 rounded-md border border-ink-600 px-3 py-1.5 text-sm font-medium text-fg-muted transition hover:border-ink-500 hover:bg-ink-800 hover:text-fg"
+        >
+          <i data-lucide="x" class="ic h-4 w-4" aria-hidden="true"></i>
+          Limpar busca
+        </button>
+      </div>
+
+    </main>
+
+    <!-- ════════════════════════ FOOTER ════════════════════════ -->
+    <footer role="contentinfo" class="border-t border-ink-700 py-8 text-sm text-fg-dim">
+      <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 sm:px-8">
+        <p>
+          Documentação pessoal — arquivos HTML auto-contidos, sem build step.
+          Inspirado em
+          <a class="prose-a" href="https://www.anthropic.com/engineering/the-unreasonable-effectiveness-of-simple-html" target="_blank" rel="noopener noreferrer">
+            "The unreasonable effectiveness of HTML"
+          </a> (Anthropic).
+        </p>
+        <p class="font-mono text-xs text-fg-dim">
+          <span id="footer-count">2</span> documentos · atualizado 2026-05-24
+        </p>
+      </div>
+    </footer>
+
+    <!-- ════════════════════════ SCRIPTS ════════════════════════ -->
+    <script>
+      // ── Inicializa ícones Lucide ──────────────────────────────────────
+      lucide.createIcons();
+      document.querySelectorAll('.ci svg, .ic svg').forEach(function (svg) {
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+      });
+
+      // ── Filtro de busca client-side ───────────────────────────────────
+      (function () {
+        var searchInput   = document.getElementById('search');
+        var resultCount   = document.getElementById('result-count');
+        var docsContainer = document.getElementById('docs-container');
+        var emptyState    = document.getElementById('empty-state');
+        var emptyTerm     = document.getElementById('empty-term');
+        var clearBtn      = document.getElementById('clear-search');
+        var headerNum     = document.getElementById('header-count-num');
+
+        // Coleta todos os cards e suas seções
+        var allCards = Array.from(document.querySelectorAll('[data-title]'));
+        var total    = allCards.length;
+
+        function normalize(str) {
+          return str
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, ''); // remove diacríticos
+        }
+
+        function filter(query) {
+          var q = normalize(query.trim());
+
+          if (!q) {
+            // Sem filtro: mostra tudo
+            allCards.forEach(function (card) { card.hidden = false; });
+            document.querySelectorAll('#docs-container section').forEach(function (sec) {
+              sec.hidden = false;
+            });
+            emptyState.classList.add('hidden');
+            docsContainer.classList.remove('hidden');
+            resultCount.textContent = '';
+            if (headerNum) headerNum.textContent = total;
+            return;
+          }
+
+          var visible = 0;
+
+          allCards.forEach(function (card) {
+            var haystack = normalize([
+              card.dataset.title    || '',
+              card.dataset.desc     || '',
+              card.dataset.category || '',
+              card.dataset.tags     || '',
+            ].join(' '));
+
+            var match = q.split(/\s+/).every(function (term) {
+              return haystack.includes(term);
+            });
+
+            card.hidden = !match;
+            if (match) visible++;
+          });
+
+          // Oculta seções sem cards visíveis
+          document.querySelectorAll('#docs-container section').forEach(function (sec) {
+            var hasVisible = Array.from(sec.querySelectorAll('[data-title]')).some(function (c) {
+              return !c.hidden;
+            });
+            sec.hidden = !hasVisible;
+          });
+
+          // Estado vazio
+          if (visible === 0) {
+            docsContainer.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            emptyTerm.textContent = '"' + query.trim() + '"';
+            resultCount.textContent = '';
+          } else {
+            docsContainer.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            var label = visible === 1
+              ? '1 documento encontrado'
+              : visible + ' documentos encontrados';
+            resultCount.textContent = label;
+          }
+
+          if (headerNum) headerNum.textContent = visible;
+        }
+
+        searchInput.addEventListener('input', function () {
+          filter(this.value);
+        });
+
+        // Limpar busca pelo botão no estado vazio
+        clearBtn.addEventListener('click', function () {
+          searchInput.value = '';
+          filter('');
+          searchInput.focus();
+        });
+
+        // Atalho de teclado: "/" foca o campo de busca
+        document.addEventListener('keydown', function (e) {
+          if (
+            e.key === '/' &&
+            document.activeElement !== searchInput &&
+            document.activeElement.tagName !== 'INPUT' &&
+            document.activeElement.tagName !== 'TEXTAREA'
+          ) {
+            e.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+          }
+          // Esc limpa a busca
+          if (e.key === 'Escape' && document.activeElement === searchInput) {
+            searchInput.value = '';
+            filter('');
+          }
+        });
+      })();
+    </script>
+  </body>
 </html>
